@@ -1,87 +1,116 @@
-// ============================================
-// PROGRAMS LIST API
-// GET /api/programs
-// ============================================
-
+// src/app/api/programs/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { programRepository } from "@/lib/repositories";
+import { db } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
-
-/**
- * GET /api/programs
- * Get list of programs with filters and pagination
- *
- * Query params:
- * - page: number (default: 1)
- * - limit: number (default: 10)
- * - category_id: number
- * - instructor_id: number
- * - status: string (default: 'published' for public)
- * - search: string
- * - min_price: number
- * - max_price: number
- * - sort_by: string (default: 'created_at')
- * - sort_order: 'asc' | 'desc' (default: 'desc')
- */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const searchParams = request.nextUrl.searchParams;
 
-    // Parse pagination params
+    // Get query parameters
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const sortBy = searchParams.get("sort_by") || "created_at";
-    const sortOrder = (searchParams.get("sort_order") || "desc") as
-      | "asc"
-      | "desc";
+    const limit = parseInt(searchParams.get("limit") || "9");
+    const category_id = searchParams.get("category_id");
+    const search = searchParams.get("search");
+    const sortBy = searchParams.get("sortBy") || "created_at";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
 
-    // Parse filter params
-    const filters: any = {
-      status: "published", // Default only show published programs for public
-    };
+    const offset = (page - 1) * limit;
 
-    if (searchParams.get("category_id")) {
-      filters.category_id = parseInt(searchParams.get("category_id")!);
+    // Build WHERE clause
+    const whereClauses: string[] = ["p.status = ?"];
+    const params: any[] = ["active"];
+
+    if (category_id) {
+      whereClauses.push("p.category_id = ?");
+      params.push(parseInt(category_id));
     }
 
-    if (searchParams.get("instructor_id")) {
-      filters.instructor_id = parseInt(searchParams.get("instructor_id")!);
+    if (search) {
+      whereClauses.push("(p.title LIKE ? OR p.description LIKE ?)");
+      params.push(`%${search}%`, `%${search}%`);
     }
 
-    if (searchParams.get("search")) {
-      filters.search = searchParams.get("search")!;
-    }
+    const whereClause = whereClauses.join(" AND ");
 
-    if (searchParams.get("min_price")) {
-      filters.min_price = parseFloat(searchParams.get("min_price")!);
-    }
+    // Whitelist allowed sort columns
+    const allowedSortColumns = ["id", "title", "price", "created_at", "views"];
+    const safeOrderBy = allowedSortColumns.includes(sortBy)
+      ? sortBy
+      : "created_at";
+    const safeOrderDirection = sortOrder === "asc" ? "ASC" : "DESC";
 
-    if (searchParams.get("max_price")) {
-      filters.max_price = parseFloat(searchParams.get("max_price")!);
-    }
+    // Count total
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM programs p 
+      WHERE ${whereClause}
+    `;
+    const countResult = await db.query<any[]>(countQuery, params);
+    const total = countResult[0]?.total || 0;
 
-    // Get programs from repository
-    const result = await programRepository.findAllWithFilters(filters, {
-      page,
-      limit,
-      sortBy,
-      sortOrder,
-    });
+    // Fetch programs with category
+    const query = `
+      SELECT 
+        p.*,
+        pc.name as category_name,
+        pc.slug as category_slug
+      FROM programs p
+      LEFT JOIN program_categories pc ON p.category_id = pc.id
+      WHERE ${whereClause}
+      ORDER BY p.${safeOrderBy} ${safeOrderDirection}
+      LIMIT ? OFFSET ?
+    `;
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-      pagination: result.pagination,
-    });
-  } catch (error: any) {
-    console.error("Get programs error:", error);
+    const programs = await db.query<any[]>(query, [...params, limit, offset]);
+
+    // Transform data
+    const transformedData = programs.map((row) => ({
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      description: row.description,
+      excerpt: row.excerpt,
+      featured_image: row.featured_image,
+      price: row.price,
+      duration: row.duration,
+      max_participants: row.max_participants,
+      certification_type: row.certification_type,
+      category_id: row.category_id,
+      status: row.status,
+      views: row.views,
+      created_at: row.created_at,
+      category: row.category_id
+        ? {
+            name: row.category_name,
+            slug: row.category_slug,
+          }
+        : null,
+    }));
 
     return NextResponse.json(
       {
-        success: false,
-        message: "Failed to fetch programs",
-        error: error.message,
+        data: transformedData,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ Error fetching programs:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to fetch programs",
+        message: error.message,
+        details:
+          process.env.NODE_ENV === "development" ? error.stack : undefined,
       },
       { status: 500 }
     );
