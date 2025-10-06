@@ -46,10 +46,22 @@ export async function query<T = any>(
 ): Promise<T> {
   try {
     const pool = getPool();
-    const [results] = await pool.execute(query, params);
+
+    // Debug logging (development only)
+    if (process.env.NODE_ENV === "development") {
+      console.log("🔍 SQL Query:", query.substring(0, 200));
+      if (params && params.length > 0) {
+        console.log("📝 Parameters:", params);
+      }
+    }
+
+    // Use query() instead of execute() to avoid prepared statement issues
+    const [results] = await pool.query(query, params);
     return results as T;
   } catch (error) {
     console.error("❌ Database query error:", error);
+    console.error("Query:", query);
+    console.error("Params:", params);
     throw error;
   }
 }
