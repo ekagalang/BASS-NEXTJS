@@ -1,3 +1,4 @@
+// src/app/api/programs/[slug]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
@@ -55,8 +56,8 @@ export async function GET(
         end_time,
         location,
         address,
-        max_participants,
-        registered_participants,
+        max_seats,
+        available_seats,
         price,
         status
       FROM schedules
@@ -67,11 +68,11 @@ export async function GET(
 
     const schedules = await db.query<any[]>(schedulesQuery, [program.id]);
 
-    // Calculate available seats for schedules
+    // Transform schedules (no calculation needed, available_seats already in DB)
     const schedulesWithSeats = schedules.map((schedule) => ({
       ...schedule,
-      available_seats:
-        schedule.max_participants - schedule.registered_participants,
+      max_participants: schedule.max_seats,
+      registered_participants: schedule.max_seats - schedule.available_seats,
     }));
 
     // Increment views
@@ -84,19 +85,21 @@ export async function GET(
       id: program.id,
       title: program.title,
       slug: program.slug,
-      description: program.description,
-      excerpt: program.excerpt,
+      description: program.description || program.content || "",
+      excerpt: program.excerpt || "",
       featured_image: program.featured_image,
-      learning_objectives: program.learning_objectives,
-      target_participants: program.target_participants,
-      requirements: program.requirements,
+      learning_objectives: program.learning_objectives || "",
+      target_participants: program.target_participants || "",
+      requirements: program.requirements || "",
       price: program.price,
       duration: program.duration,
-      max_participants: program.max_participants,
+      max_participants: program.max_participants || 20,
       certification_type: program.certification_type,
       category_id: program.category_id,
       status: program.status,
       views: program.views,
+      meta_title: program.meta_title,
+      meta_description: program.meta_description,
       created_at: program.created_at,
       updated_at: program.updated_at,
       category: program.category_id

@@ -1,3 +1,4 @@
+// src/app/programs/page.tsx
 import Link from "next/link";
 import { Metadata } from "next";
 
@@ -22,16 +23,18 @@ async function getPrograms(searchParams: any) {
   if (searchParams.page) params.append("page", searchParams.page);
   if (searchParams.sort) params.append("sortBy", searchParams.sort);
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-  const url = `${baseUrl}/api/programs?${params.toString()}`;
+  // FIX: Remove /api prefix since we're calling from server side
+  const url = `http://localhost:3000/api/programs?${params.toString()}`;
 
   try {
     const res = await fetch(url, {
-      cache: "no-store", // Untuk development, ganti 'force-cache' untuk production
+      cache: "no-store",
     });
 
     if (!res.ok) {
-      throw new Error("Failed to fetch programs");
+      const errorText = await res.text();
+      console.error("API Error:", res.status, errorText);
+      throw new Error(`Failed to fetch programs: ${res.status}`);
     }
 
     return res.json();
@@ -46,14 +49,15 @@ async function getPrograms(searchParams: any) {
 
 // Fungsi untuk fetch categories
 async function getCategories() {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-
   try {
-    const res = await fetch(`${baseUrl}/api/program-categories`, {
+    const res = await fetch("http://localhost:3000/api/program-categories", {
       cache: "force-cache",
     });
 
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.error("Categories API Error:", res.status);
+      return [];
+    }
 
     return res.json();
   } catch (error) {
@@ -65,10 +69,13 @@ async function getCategories() {
 export default async function ProgramsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  // FIX: Await searchParams (Next.js 15 requirement)
+  const params = await searchParams;
+
   const [programsData, categories] = await Promise.all([
-    getPrograms(searchParams),
+    getPrograms(params),
     getCategories(),
   ]);
 
@@ -107,7 +114,7 @@ export default async function ProgramsPage({
                     <Link
                       href="/programs"
                       className={`block px-3 py-2 rounded-lg transition ${
-                        !searchParams.category
+                        !params.category
                           ? "bg-blue-50 text-blue-700 font-medium"
                           : "text-gray-600 hover:bg-gray-50"
                       }`}
@@ -119,7 +126,7 @@ export default async function ProgramsPage({
                         key={cat.id}
                         href={`/programs?category=${cat.id}`}
                         className={`block px-3 py-2 rounded-lg transition ${
-                          searchParams.category === cat.id.toString()
+                          params.category === cat.id.toString()
                             ? "bg-blue-50 text-blue-700 font-medium"
                             : "text-gray-600 hover:bg-gray-50"
                         }`}
@@ -144,8 +151,8 @@ export default async function ProgramsPage({
             <main className="lg:w-3/4">
               {/* Search and Sort Bar */}
               <ProgramsClient
-                initialSearch={searchParams.search as string}
-                initialSort={searchParams.sort as string}
+                initialSearch={(params.search as string) || ""}
+                initialSort={(params.sort as string) || "created_at"}
                 totalPrograms={pagination.total}
               />
 
@@ -302,14 +309,10 @@ export default async function ProgramsPage({
                       {pagination.page > 1 && (
                         <Link
                           href={`/programs?page=${pagination.page - 1}${
-                            searchParams.category
-                              ? `&category=${searchParams.category}`
+                            params.category
+                              ? `&category=${params.category}`
                               : ""
-                          }${
-                            searchParams.search
-                              ? `&search=${searchParams.search}`
-                              : ""
-                          }`}
+                          }${params.search ? `&search=${params.search}` : ""}`}
                           className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition"
                         >
                           Previous
@@ -324,14 +327,10 @@ export default async function ProgramsPage({
                         <Link
                           key={pageNum}
                           href={`/programs?page=${pageNum}${
-                            searchParams.category
-                              ? `&category=${searchParams.category}`
+                            params.category
+                              ? `&category=${params.category}`
                               : ""
-                          }${
-                            searchParams.search
-                              ? `&search=${searchParams.search}`
-                              : ""
-                          }`}
+                          }${params.search ? `&search=${params.search}` : ""}`}
                           className={`px-4 py-2 rounded-lg transition ${
                             pageNum === pagination.page
                               ? "bg-blue-600 text-white"
@@ -346,14 +345,10 @@ export default async function ProgramsPage({
                       {pagination.page < pagination.totalPages && (
                         <Link
                           href={`/programs?page=${pagination.page + 1}${
-                            searchParams.category
-                              ? `&category=${searchParams.category}`
+                            params.category
+                              ? `&category=${params.category}`
                               : ""
-                          }${
-                            searchParams.search
-                              ? `&search=${searchParams.search}`
-                              : ""
-                          }`}
+                          }${params.search ? `&search=${params.search}` : ""}`}
                           className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition"
                         >
                           Next

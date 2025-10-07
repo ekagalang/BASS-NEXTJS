@@ -92,6 +92,23 @@ CREATE TABLE instructors (
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ============================================
+-- JUNCTION TABLE: PROGRAM INSTRUCTORS
+-- ============================================
+
+-- Table: program_instructors (Many-to-Many relationship)
+CREATE TABLE program_instructors (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    program_id INT UNSIGNED NOT NULL,
+    instructor_id INT UNSIGNED NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE,
+    FOREIGN KEY (instructor_id) REFERENCES instructors(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_program_instructor (program_id, instructor_id),
+    INDEX idx_program_id (program_id),
+    INDEX idx_instructor_id (instructor_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Table: programs
 CREATE TABLE programs (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

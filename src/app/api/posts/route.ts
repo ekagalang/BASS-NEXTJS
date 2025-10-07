@@ -1,71 +1,117 @@
-// ============================================
-// POSTS LIST API
-// GET /api/posts
-// ============================================
-
 import { NextRequest, NextResponse } from "next/server";
-import { postRepository } from "@/lib/repositories";
+import { db } from "@/lib/db";
 
-export const dynamic = "force-dynamic";
-
-/**
- * GET /api/posts
- * Get list of posts/blog with filters and pagination
- *
- * Query params:
- * - page: number (default: 1)
- * - limit: number (default: 10)
- * - category_id: number
- * - search: string
- * - sort_by: string (default: 'published_at')
- * - sort_order: 'asc' | 'desc' (default: 'desc')
- */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const searchParams = request.nextUrl.searchParams;
 
-    // Parse pagination params
     const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const sortBy = searchParams.get("sort_by") || "published_at";
-    const sortOrder = (searchParams.get("sort_order") || "desc") as
-      | "asc"
-      | "desc";
+    const limit = parseInt(searchParams.get("limit") || "9");
+    const category_id = searchParams.get("category_id");
+    const search = searchParams.get("search");
 
-    // Parse filter params
-    const filters: any = {
-      status: "published", // Only published posts for public
-    };
+    const offset = (page - 1) * limit;
 
-    if (searchParams.get("category_id")) {
-      filters.category_id = parseInt(searchParams.get("category_id")!);
+    // Build WHERE clause
+    const whereClauses: string[] = ["p.status = ?", "p.published_at <= NOW()"];
+    const params: any[] = ["published"];
+
+    if (category_id) {
+      whereClauses.push("p.category_id = ?");
+      params.push(parseInt(category_id));
     }
 
-    if (searchParams.get("search")) {
-      filters.search = searchParams.get("search")!;
+    if (search) {
+      whereClauses.push(
+        "(p.title LIKE ? OR p.content LIKE ? OR p.excerpt LIKE ?)"
+      );
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    // Get posts from repository
-    const result = await postRepository.findAllWithFilters(filters, {
-      page,
-      limit,
-      sortBy,
-      sortOrder,
-    });
+    const whereClause = whereClauses.join(" AND ");
 
-    return NextResponse.json({
-      success: true,
-      data: result.data,
-      pagination: result.pagination,
-    });
-  } catch (error: any) {
-    console.error("Get posts error:", error);
+    // Count total
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM posts p 
+      WHERE ${whereClause}
+    `;
+    const countResult = await db.query<any[]>(countQuery, params);
+    const total = countResult[0]?.total || 0;
+
+    // Fetch posts with category and author
+    const query = `
+      SELECT 
+        p.id,
+        p.title,
+        p.slug,
+        p.excerpt,
+        p.featured_image,
+        p.category_id,
+        p.author_id,
+        p.views,
+        p.published_at,
+        p.created_at,
+        pc.name as category_name,
+        pc.slug as category_slug,
+        u.name as author_name
+      FROM posts p
+      LEFT JOIN post_categories pc ON p.category_id = pc.id
+      LEFT JOIN users u ON p.author_id = u.id
+      WHERE ${whereClause}
+      ORDER BY p.published_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const posts = await db.query<any[]>(query, [...params, limit, offset]);
+
+    // Transform data
+    const transformedData = posts.map((row) => ({
+      id: row.id,
+      title: row.title,
+      slug: row.slug,
+      excerpt: row.excerpt,
+      featured_image: row.featured_image,
+      category_id: row.category_id,
+      author_id: row.author_id,
+      views: row.views,
+      published_at: row.published_at,
+      created_at: row.created_at,
+      category: row.category_id
+        ? {
+            name: row.category_name,
+            slug: row.category_slug,
+          }
+        : null,
+      author: {
+        name: row.author_name,
+      },
+    }));
 
     return NextResponse.json(
       {
-        success: false,
-        message: "Failed to fetch posts",
-        error: error.message,
+        data: transformedData,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ Error fetching posts:", error);
+    return NextResponse.json(
+      {
+        error: "Failed to fetch posts",
+        message: error.message,
+        details:
+          process.env.NODE_ENV === "development" ? error.stack : undefined,
       },
       { status: 500 }
     );

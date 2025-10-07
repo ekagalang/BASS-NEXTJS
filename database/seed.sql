@@ -102,6 +102,17 @@ INSERT INTO programs (title, slug, category_id, description, content, duration, 
  'Pelatihan Manajemen SDM Strategis - BASS Training',
  'Program pelatihan manajemen SDM strategis. Kelola sumber daya manusia dengan pendekatan strategis dan terukur.');
 
+ -- ============================================
+-- 4.5 PROGRAM INSTRUCTORS (Junction Table)
+-- ============================================
+
+INSERT INTO program_instructors (program_id, instructor_id) VALUES
+(1, 1), -- Training of Trainer dengan Dr. Budi Santoso
+(1, 3), -- Training of Trainer dengan Eko Prasetyo
+(2, 2), -- Komunikasi Efektif dengan Ani Wijaya
+(3, 1), -- Leadership dengan Dr. Budi Santoso
+(4, 1); -- Manajemen SDM dengan Dr. Budi Santoso
+
 -- ============================================
 -- 5. SCHEDULES
 -- ============================================
@@ -126,6 +137,17 @@ INSERT INTO schedules (program_id, start_date, end_date, start_time, end_time, l
 (4, '2025-11-25', '2025-11-28', '09:00:00', '16:00:00',
  'Hotel Santika Premiere Yogyakarta', 'Jl. Jend. Sudirman No. 19, Yogyakarta',
  20, 12, 5500000.00, 'upcoming');
+
+ -- ============================================
+-- 5.5 PROGRAM INSTRUCTORS (Junction Table)
+-- ============================================
+
+INSERT INTO program_instructors (program_id, instructor_id) VALUES
+(1, 1), -- ToT dengan Dr. Budi Santoso
+(1, 3), -- ToT dengan Eko Prasetyo
+(2, 2), -- Komunikasi Efektif dengan Ani Wijaya
+(3, 1), -- Leadership dengan Dr. Budi Santoso
+(4, 1); -- Manajemen SDM dengan Dr. Budi Santoso
 
 -- ============================================
 -- 6. PAGES

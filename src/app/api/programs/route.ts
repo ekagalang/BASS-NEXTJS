@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
     // Build WHERE clause
     const whereClauses: string[] = ["p.status = ?"];
-    const params: any[] = ["active"];
+    const params: any[] = ["published"]; // ← Changed from 'active' to 'published'
 
     if (category_id) {
       whereClauses.push("p.category_id = ?");

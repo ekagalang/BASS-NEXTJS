@@ -1,125 +1,138 @@
 // ============================================
 // HEADER COMPONENT
 // Main navigation header
-// ============================================
+// Improvements:
+// - Integrated with Material Tailwind for Typography and Button
+// - Used CSS variables for PRIMARY and ACCENT colors
+// - Improved mobile menu transitions and accessibility
+// - Ensured sticky header with shadow
+// - Consistent typography and neutral color scheme
+// - Replaced container-custom with max-w-7xl for consistency
+// - Added hover effects and transitions
+// - Adapted to floating blurred style using MTNavbar with blurred=true
+// - Adjusted positioning to sticky top-4 z-50 with mt-6 for floating feel
+// - Removed phone and email from top bar as per request
+// - Enhanced floating feel by adding more margin-top and stronger shadow
 
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Menu, X, Phone, Mail } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Menu, X } from "lucide-react";
+import {
+  Button,
+  Typography,
+  Navbar as MTNavbar,
+  Collapse,
+  IconButton,
+} from "@material-tailwind/react";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const PRIMARY = "#DA1E1E";
+  const ACCENT = "#D91E43";
 
   const navigation = [
     { name: "Beranda", href: "/" },
     { name: "Program", href: "/programs" },
     { name: "Blog", href: "/blog" },
     { name: "Tentang", href: "/about" },
-    { name: "Kontak", href: "/contact" },
+    { name: "Kontak", href: "/hubungi-kami" },
   ];
 
+  useEffect(() => {
+    window.addEventListener(
+      "resize",
+      () => window.innerWidth >= 960 && setMobileMenuOpen(false)
+    );
+  }, []);
+
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
-      {/* Top Bar */}
-      <div className="bg-primary-600 text-white">
-        <div className="container-custom">
-          <div className="flex items-center justify-between py-2 text-sm">
-            <div className="flex items-center gap-4">
-              <a
-                href="tel:02112345678"
-                className="flex items-center gap-2 hover:text-primary-100"
+    <header
+      className="sticky top-0 z-50"
+      style={{ "--primary": PRIMARY, "--accent": ACCENT }}
+    >
+      {/* Main Navbar - Floating Blurred with enhanced shadow */}
+      <div className="px-4 sm:px-6 lg:px-8 mt-6">
+        <MTNavbar
+          blurred={true}
+          color="white"
+          className="mx-auto max-w-7xl relative border-0 py-3 px-6 rounded-xl shadow-lg"
+        >
+          <div className="flex items-center justify-between text-neutral-900">
+            {/* Logo */}
+            <Link href="/" className="flex items-center">
+              <Typography
+                variant="h4"
+                className="font-bold text-[color:var(--primary)]"
               >
-                <Phone className="w-4 h-4" />
-                <span className="hidden sm:inline">(021) 1234-5678</span>
-              </a>
-              <a
-                href="mailto:admin@basstrainingacademy.com"
-                className="flex items-center gap-2 hover:text-primary-100"
+                BASS
+              </Typography>
+              <Typography className="ml-2 text-sm text-neutral-600 hidden sm:block">
+                Training Academy
+              </Typography>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-8">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className="text-neutral-700 hover:text-[color:var(--primary)] font-medium transition-colors duration-300"
+                >
+                  {item.name}
+                </Link>
+              ))}
+              <Button
+                variant="filled"
+                className="bg-[color:var(--primary)] hover:bg-[color:var(--accent)] text-white px-6 py-2 rounded-lg transition-colors duration-300 font-medium"
               >
-                <Mail className="w-4 h-4" />
-                <span className="hidden md:inline">
-                  admin@basstrainingacademy.com
-                </span>
-              </a>
-            </div>
-            <div className="text-xs sm:text-sm">
-              Sertifikasi BNSP Terpercaya
-            </div>
+                <Link href="/programs">Daftar Sekarang</Link>
+              </Button>
+            </nav>
+
+            {/* Mobile Menu Button */}
+            <IconButton
+              variant="text"
+              color="gray"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="ml-auto inline-block md:hidden"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </IconButton>
           </div>
-        </div>
-      </div>
 
-      {/* Main Header */}
-      <div className="container-custom">
-        <div className="flex items-center justify-between h-16 lg:h-20">
-          {/* Logo */}
-          <Link href="/" className="flex items-center">
-            <div className="text-2xl font-bold text-primary-600">BASS</div>
-            <div className="ml-2 text-sm text-gray-600 hidden sm:block">
-              Training Academy
+          {/* Mobile Menu */}
+          <Collapse open={mobileMenuOpen}>
+            <div className="mt-3 border-t border-neutral-200 pt-4">
+              <nav className="flex flex-col gap-4">
+                {navigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="text-neutral-700 hover:text-[color:var(--primary)] font-medium py-2 transition-colors duration-300"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+                <Button
+                  variant="filled"
+                  className="bg-[color:var(--primary)] hover:bg-[color:var(--accent)] text-white px-6 py-3 rounded-lg transition-colors duration-300 font-medium text-center"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Link href="/programs">Daftar Sekarang</Link>
+                </Button>
+              </nav>
             </div>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="text-gray-700 hover:text-primary-600 font-medium transition-colors"
-              >
-                {item.name}
-              </Link>
-            ))}
-            <Link
-              href="/programs"
-              className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors font-medium"
-            >
-              Daftar Sekarang
-            </Link>
-          </nav>
-
-          {/* Mobile Menu Button */}
-          <button
-            type="button"
-            className="md:hidden p-2 text-gray-700"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
-          </button>
-        </div>
+          </Collapse>
+        </MTNavbar>
       </div>
-
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t">
-          <nav className="container-custom py-4 flex flex-col gap-4">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className="text-gray-700 hover:text-primary-600 font-medium py-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.name}
-              </Link>
-            ))}
-            <Link
-              href="/programs"
-              className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors font-medium text-center"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Daftar Sekarang
-            </Link>
-          </nav>
-        </div>
-      )}
     </header>
   );
 }
