@@ -38,6 +38,9 @@ export default function AdminTopBar({
   onToggleSidebar,
   sidebarOpen: _sidebarOpen,
 }: TopBarProps) {
+  const PRIMARY = "#DA1E1E";
+  const ACCENT = "#D91E43";
+
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -65,7 +68,16 @@ export default function AdminTopBar({
               <input
                 type="text"
                 placeholder="Search..."
-                className="pl-10 pr-4 py-2 w-64 lg:w-80 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="pl-10 pr-4 py-2 w-64 lg:w-80 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-sm"
+                style={{
+                  outlineColor: PRIMARY,
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.boxShadow = `0 0 0 2px ${PRIMARY}40`;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.boxShadow = "none";
+                }}
               />
             </div>
           </div>
@@ -123,7 +135,12 @@ export default function AdminTopBar({
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                style={{
+                  background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                }}
+              >
                 {user?.name.charAt(0).toUpperCase()}
               </div>
               <div className="hidden lg:block text-left">

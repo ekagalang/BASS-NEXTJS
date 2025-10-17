@@ -45,6 +45,8 @@ interface NavItem {
 
 export default function AdminSidebar({ isOpen, onToggle, user }: SidebarProps) {
   const pathname = usePathname();
+  const PRIMARY = "#DA1E1E";
+  const ACCENT = "#D91E43";
 
   // ============================================
   // NAVIGATION ITEMS
@@ -141,7 +143,12 @@ export default function AdminSidebar({ isOpen, onToggle, user }: SidebarProps) {
           {isOpen ? (
             <>
               <Link href="/admin/dashboard" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                  }}
+                >
                   <GraduationCap className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -181,17 +188,31 @@ export default function AdminSidebar({ isOpen, onToggle, user }: SidebarProps) {
                     href={item.href}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group ${
                       active
-                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
+                        ? "text-white shadow-lg"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
+                    style={{
+                      background: active
+                        ? `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`
+                        : "transparent",
+                    }}
                     title={isOpen ? undefined : item.name}
                   >
                     <Icon
                       className={`w-5 h-5 flex-shrink-0 ${
-                        active
-                          ? "text-white"
-                          : "text-gray-500 group-hover:text-blue-600"
+                        active ? "text-white" : "text-gray-500"
                       }`}
+                      style={{
+                        color: active
+                          ? "white"
+                          : undefined,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!active) e.currentTarget.style.color = PRIMARY;
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!active) e.currentTarget.style.color = "#6b7280";
+                      }}
                     />
                     {isOpen && (
                       <>
@@ -216,7 +237,12 @@ export default function AdminSidebar({ isOpen, onToggle, user }: SidebarProps) {
         {isOpen && user && (
           <div className="border-t border-gray-200 p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                style={{
+                  background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                }}
+              >
                 {user.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">

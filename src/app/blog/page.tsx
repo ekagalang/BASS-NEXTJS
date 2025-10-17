@@ -1,6 +1,7 @@
 // src/app/blog/page.tsx
 import Link from "next/link";
 import { Metadata } from "next";
+import HoverLink from "@/components/ui/HoverLink";
 
 export const metadata: Metadata = {
   title: "Blog & Artikel",
@@ -18,7 +19,8 @@ async function getPosts(searchParams: any) {
   if (searchParams.search) params.append("search", searchParams.search);
   if (searchParams.page) params.append("page", searchParams.page);
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
   const url = `${baseUrl}/posts?${params.toString()}`;
 
   try {
@@ -47,7 +49,8 @@ async function getPosts(searchParams: any) {
 // Fetch categories
 async function getCategories() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    const baseUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
     const res = await fetch(`${baseUrl}/post-categories`, {
       cache: "force-cache",
     });
@@ -75,16 +78,24 @@ export default async function BlogPage({
 
   const { data: posts, pagination } = postsData;
 
+  const PRIMARY = "#DA1E1E";
+  const ACCENT = "#D91E43";
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-16">
+      <section
+        className="text-white py-20"
+        style={{
+          background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+        }}
+      >
         <div className="container mx-auto px-4">
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Blog & Artikel
             </h1>
-            <p className="text-lg text-blue-100">
+            <p className="text-lg text-white/90">
               Temukan tips, insight, dan berita terbaru seputar pengembangan SDM
               dan pelatihan profesional
             </p>
@@ -99,9 +110,9 @@ export default async function BlogPage({
             {/* Main Content */}
             <main className="lg:w-3/4">
               {posts.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-md p-12 text-center">
+                <div className="bg-white rounded-xl shadow-lg border-0 p-12 text-center">
                   <svg
-                    className="w-16 h-16 mx-auto mb-4 text-gray-300"
+                    className="w-16 h-16 mx-auto mb-4 text-neutral-300"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -113,10 +124,10 @@ export default async function BlogPage({
                       d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
                     />
                   </svg>
-                  <h3 className="text-xl font-semibold mb-2">
+                  <h3 className="text-xl font-semibold mb-2 text-neutral-900">
                     Belum Ada Artikel
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-neutral-600">
                     Artikel akan segera tersedia. Nantikan update terbaru dari
                     kami!
                   </p>
@@ -125,9 +136,16 @@ export default async function BlogPage({
                 <>
                   {/* Featured Post (First Post) */}
                   {posts.length > 0 && pagination.page === 1 && (
-                    <article className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+                    <article className="bg-white rounded-xl shadow-lg border-0 overflow-hidden mb-8 hover:shadow-2xl transition-all duration-300">
                       <div className="grid md:grid-cols-2 gap-6">
-                        <div className="h-64 md:h-full bg-gradient-to-br from-blue-400 to-blue-600">
+                        <div
+                          className="h-64 md:h-full"
+                          style={{
+                            background: posts[0].featured_image
+                              ? "transparent"
+                              : `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                          }}
+                        >
                           {posts[0].featured_image && (
                             <img
                               src={posts[0].featured_image}
@@ -137,23 +155,32 @@ export default async function BlogPage({
                           )}
                         </div>
                         <div className="p-6 flex flex-col justify-center">
-                          <span className="inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full mb-3 w-fit">
+                          <span
+                            className="inline-block text-xs px-3 py-1 rounded-full mb-3 w-fit font-medium"
+                            style={{
+                              backgroundColor: `${PRIMARY}15`,
+                              color: PRIMARY,
+                            }}
+                          >
                             Featured
                           </span>
                           {posts[0].category && (
-                            <span className="text-sm text-gray-500 mb-2">
+                            <span className="text-sm text-neutral-500 mb-2">
                               {posts[0].category.name}
                             </span>
                           )}
-                          <h2 className="text-2xl md:text-3xl font-bold mb-3 hover:text-blue-600 transition">
-                            <Link href={`/blog/${posts[0].slug}`}>
+                          <h2 className="text-2xl md:text-3xl font-bold mb-3 text-neutral-900 hover:underline transition-colors duration-300">
+                            <HoverLink
+                              href={`/blog/${posts[0].slug}`}
+                              hoverColor={PRIMARY}
+                            >
                               {posts[0].title}
-                            </Link>
+                            </HoverLink>
                           </h2>
-                          <p className="text-gray-600 mb-4 line-clamp-3">
+                          <p className="text-neutral-600 mb-4 line-clamp-3">
                             {posts[0].excerpt}
                           </p>
-                          <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                          <div className="flex items-center gap-4 text-sm text-neutral-500 mb-4">
                             <span>{posts[0].author?.name}</span>
                             <span>•</span>
                             <span>
@@ -168,7 +195,8 @@ export default async function BlogPage({
                           </div>
                           <Link
                             href={`/blog/${posts[0].slug}`}
-                            className="text-blue-600 font-semibold hover:underline"
+                            className="font-semibold hover:underline transition-colors duration-300"
+                            style={{ color: PRIMARY }}
                           >
                             Baca Selengkapnya →
                           </Link>
@@ -184,9 +212,16 @@ export default async function BlogPage({
                       .map((post: any) => (
                         <article
                           key={post.id}
-                          className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition"
+                          className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
                         >
-                          <div className="h-48 bg-gradient-to-br from-gray-200 to-gray-300">
+                          <div
+                            className="h-48"
+                            style={{
+                              background: post.featured_image
+                                ? "transparent"
+                                : "linear-gradient(to-br, #e5e7eb, #d1d5db)",
+                            }}
+                          >
                             {post.featured_image && (
                               <img
                                 src={post.featured_image}
@@ -197,19 +232,29 @@ export default async function BlogPage({
                           </div>
                           <div className="p-5">
                             {post.category && (
-                              <span className="inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full mb-3">
+                              <span
+                                className="inline-block text-xs px-3 py-1 rounded-full mb-3 font-medium"
+                                style={{
+                                  backgroundColor: `${PRIMARY}15`,
+                                  color: PRIMARY,
+                                }}
+                              >
                                 {post.category.name}
                               </span>
                             )}
-                            <h3 className="text-lg font-semibold mb-2 line-clamp-2 hover:text-blue-600 transition">
-                              <Link href={`/blog/${post.slug}`}>
+                            <h3 className="text-lg font-semibold mb-2 line-clamp-2 text-neutral-900">
+                              <HoverLink
+                                href={`/blog/${post.slug}`}
+                                className="hover:underline transition-colors duration-300"
+                                hoverColor={PRIMARY}
+                              >
                                 {post.title}
-                              </Link>
+                              </HoverLink>
                             </h3>
-                            <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                            <p className="text-neutral-600 text-sm mb-4 line-clamp-3">
                               {post.excerpt}
                             </p>
-                            <div className="flex items-center justify-between text-sm text-gray-500 border-t pt-3">
+                            <div className="flex items-center justify-between text-sm text-neutral-500 border-t border-neutral-200 pt-3">
                               <span>{post.author?.name}</span>
                               <span>
                                 {new Date(post.published_at).toLocaleDateString(
@@ -236,7 +281,7 @@ export default async function BlogPage({
                               ? `&category=${params.category}`
                               : ""
                           }`}
-                          className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition"
+                          className="px-4 py-2 bg-white border-2 border-neutral-200 rounded-xl hover:border-neutral-300 hover:shadow-md transition-all duration-300 font-medium"
                         >
                           Previous
                         </Link>
@@ -253,11 +298,15 @@ export default async function BlogPage({
                               ? `&category=${params.category}`
                               : ""
                           }`}
-                          className={`px-4 py-2 rounded-lg transition ${
+                          className={`px-4 py-2 rounded-xl transition-all duration-300 font-medium ${
                             pageNum === pagination.page
-                              ? "bg-blue-600 text-white"
-                              : "bg-white border hover:bg-gray-50"
+                              ? "text-white shadow-lg transform scale-105"
+                              : "bg-white border-2 border-neutral-200 hover:border-neutral-300 hover:shadow-md text-neutral-700"
                           }`}
+                          style={{
+                            backgroundColor:
+                              pageNum === pagination.page ? PRIMARY : undefined,
+                          }}
                         >
                           {pageNum}
                         </Link>
@@ -270,7 +319,7 @@ export default async function BlogPage({
                               ? `&category=${params.category}`
                               : ""
                           }`}
-                          className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition"
+                          className="px-4 py-2 bg-white border-2 border-neutral-200 rounded-xl hover:border-neutral-300 hover:shadow-md transition-all duration-300 font-medium"
                         >
                           Next
                         </Link>
@@ -284,16 +333,24 @@ export default async function BlogPage({
             {/* Sidebar */}
             <aside className="lg:w-1/4">
               {/* Categories */}
-              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h3 className="text-xl font-bold mb-4">Kategori</h3>
+              <div className="bg-white rounded-xl shadow-lg border-0 p-6 mb-6">
+                <h3 className="text-xl font-bold mb-4 text-neutral-900">
+                  Kategori
+                </h3>
                 <div className="space-y-2">
                   <Link
                     href="/blog"
-                    className={`block px-3 py-2 rounded-lg transition ${
+                    className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
                       !params.category
-                        ? "bg-blue-50 text-blue-700 font-medium"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "font-medium shadow-md"
+                        : "text-neutral-600 hover:bg-neutral-50"
                     }`}
+                    style={{
+                      backgroundColor: !params.category
+                        ? `${PRIMARY}15`
+                        : "transparent",
+                      color: !params.category ? PRIMARY : undefined,
+                    }}
                   >
                     Semua Artikel
                   </Link>
@@ -301,11 +358,21 @@ export default async function BlogPage({
                     <Link
                       key={cat.id}
                       href={`/blog?category=${cat.id}`}
-                      className={`block px-3 py-2 rounded-lg transition ${
+                      className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
                         params.category === cat.id.toString()
-                          ? "bg-blue-50 text-blue-700 font-medium"
-                          : "text-gray-600 hover:bg-gray-50"
+                          ? "font-medium shadow-md"
+                          : "text-neutral-600 hover:bg-neutral-50"
                       }`}
+                      style={{
+                        backgroundColor:
+                          params.category === cat.id.toString()
+                            ? `${PRIMARY}15`
+                            : "transparent",
+                        color:
+                          params.category === cat.id.toString()
+                            ? PRIMARY
+                            : undefined,
+                      }}
                     >
                       {cat.name}
                     </Link>
@@ -314,20 +381,26 @@ export default async function BlogPage({
               </div>
 
               {/* Newsletter */}
-              <div className="bg-blue-900 text-white rounded-lg shadow-md p-6">
+              <div
+                className="text-white rounded-xl shadow-lg p-6"
+                style={{
+                  background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                }}
+              >
                 <h3 className="text-xl font-bold mb-2">Newsletter</h3>
-                <p className="text-blue-100 text-sm mb-4">
+                <p className="text-white/90 text-sm mb-4">
                   Dapatkan update artikel terbaru langsung ke email Anda
                 </p>
                 <form className="space-y-3">
                   <input
                     type="email"
                     placeholder="Email Anda"
-                    className="w-full px-4 py-2 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    className="w-full px-4 py-2 rounded-xl text-neutral-900 focus:outline-none focus:ring-2 focus:ring-white/50 shadow-md"
                   />
                   <button
                     type="submit"
-                    className="w-full bg-white text-blue-900 px-4 py-2 rounded-lg font-semibold hover:bg-blue-50 transition"
+                    className="w-full bg-white px-4 py-2 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                    style={{ color: PRIMARY }}
                   >
                     Subscribe
                   </button>

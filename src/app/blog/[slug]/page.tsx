@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import HoverLink from "@/components/ui/HoverLink";
+import { HoverButton } from "@/components/ui/HoverButton";
 
 // Generate metadata
 export async function generateMetadata({
@@ -91,6 +93,9 @@ export default async function SinglePostPage({
     ? await getRelatedPosts(post.category_id, post.id)
     : [];
 
+  const PRIMARY = "#DA1E1E";
+  const ACCENT = "#D91E43";
+
   // Article structured data
   const articleSchema = {
     "@context": "https://schema.org",
@@ -122,20 +127,28 @@ export default async function SinglePostPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
       />
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-neutral-50">
         {/* Breadcrumb */}
-        <div className="bg-white border-b">
+        <div className="bg-white border-b border-neutral-200">
           <div className="container mx-auto px-4 py-4">
-            <nav className="flex items-center gap-2 text-sm text-gray-600">
-              <Link href="/" className="hover:text-blue-600">
+            <nav className="flex items-center gap-2 text-sm text-neutral-600">
+              <HoverLink
+                href="/"
+                className="hover:underline transition-colors duration-300"
+                hoverColor={PRIMARY}
+              >
                 Home
-              </Link>
+              </HoverLink>
               <span>/</span>
-              <Link href="/blog" className="hover:text-blue-600">
+              <HoverLink
+                href="/blog"
+                className="hover:underline transition-colors duration-300"
+                hoverColor={PRIMARY}
+              >
                 Blog
-              </Link>
+              </HoverLink>
               <span>/</span>
-              <span className="text-gray-900 font-medium line-clamp-1">
+              <span className="text-neutral-900 font-medium line-clamp-1">
                 {post.title}
               </span>
             </nav>
@@ -150,7 +163,11 @@ export default async function SinglePostPage({
               {post.category && (
                 <Link
                   href={`/blog?category=${post.category_id}`}
-                  className="inline-block bg-blue-100 text-blue-700 text-sm px-4 py-1 rounded-full mb-4 hover:bg-blue-200 transition"
+                  className="inline-block text-sm px-4 py-1 rounded-full mb-4 font-medium transition-all duration-300 hover:shadow-md"
+                  style={{
+                    backgroundColor: `${PRIMARY}15`,
+                    color: PRIMARY,
+                  }}
                 >
                   {post.category.name}
                 </Link>
@@ -162,9 +179,14 @@ export default async function SinglePostPage({
               </h1>
 
               {/* Meta Info */}
-              <div className="flex flex-wrap items-center gap-4 text-gray-600 mb-8 pb-8 border-b">
+              <div className="flex flex-wrap items-center gap-4 text-neutral-600 mb-8 pb-8 border-b border-neutral-200">
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-blue-900 rounded-full flex items-center justify-center text-white font-semibold">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold shadow-md"
+                    style={{
+                      background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                    }}
+                  >
                     {post.author?.name?.charAt(0)}
                   </div>
                   <span className="font-medium">{post.author?.name}</span>
@@ -183,7 +205,7 @@ export default async function SinglePostPage({
 
               {/* Featured Image */}
               {post.featured_image && (
-                <div className="mb-8 rounded-lg overflow-hidden">
+                <div className="mb-8 rounded-xl overflow-hidden shadow-lg">
                   <img
                     src={post.featured_image}
                     alt={post.title}
@@ -199,15 +221,15 @@ export default async function SinglePostPage({
               />
 
               {/* Share Buttons */}
-              <div className="flex items-center gap-3 py-6 border-t border-b mb-8">
-                <span className="font-semibold">Bagikan:</span>
+              <div className="flex items-center gap-3 py-6 border-t border-neutral-200 border-b mb-8">
+                <span className="font-semibold text-neutral-900">Bagikan:</span>
                 <a
                   href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
                     `https://basstrainingacademy.com/blog/${post.slug}`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg font-medium"
                 >
                   <svg
                     className="w-5 h-5"
@@ -224,7 +246,7 @@ export default async function SinglePostPage({
                   )}&text=${encodeURIComponent(post.title)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-lg hover:bg-sky-600 transition"
+                  className="flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-xl hover:bg-sky-600 transition-all duration-300 shadow-md hover:shadow-lg font-medium"
                 >
                   <svg
                     className="w-5 h-5"
@@ -241,7 +263,7 @@ export default async function SinglePostPage({
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition"
+                  className="flex items-center gap-2 bg-blue-700 text-white px-4 py-2 rounded-xl hover:bg-blue-800 transition-all duration-300 shadow-md hover:shadow-lg font-medium"
                 >
                   <svg
                     className="w-5 h-5"
@@ -255,16 +277,26 @@ export default async function SinglePostPage({
               </div>
 
               {/* Author Info */}
-              <div className="bg-blue-50 rounded-lg p-6 mb-8">
+              <div
+                className="rounded-xl shadow-lg p-6 mb-8"
+                style={{
+                  backgroundColor: `${PRIMARY}10`,
+                }}
+              >
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center text-white text-2xl font-bold flex-shrink-0">
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold flex-shrink-0 shadow-md"
+                    style={{
+                      background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                    }}
+                  >
                     {post.author?.name?.charAt(0)}
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold mb-1">
+                    <h3 className="text-lg font-semibold mb-1 text-neutral-900">
                       {post.author?.name}
                     </h3>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-neutral-600 text-sm">
                       Penulis artikel di BASS Training Academy
                     </p>
                   </div>
@@ -279,14 +311,23 @@ export default async function SinglePostPage({
           <section className="py-12 bg-white">
             <div className="container mx-auto px-4">
               <div className="max-w-6xl mx-auto">
-                <h2 className="text-3xl font-bold mb-8">Artikel Terkait</h2>
+                <h2 className="text-3xl font-bold mb-8 text-neutral-900">
+                  Artikel Terkait
+                </h2>
                 <div className="grid md:grid-cols-3 gap-6">
                   {relatedPosts.map((relPost: any) => (
                     <article
                       key={relPost.id}
-                      className="bg-gray-50 rounded-lg overflow-hidden hover:shadow-lg transition"
+                      className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-neutral-100"
                     >
-                      <div className="h-48 bg-gradient-to-br from-gray-200 to-gray-300">
+                      <div
+                        className="h-48"
+                        style={{
+                          background: relPost.featured_image
+                            ? "transparent"
+                            : `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                        }}
+                      >
                         {relPost.featured_image && (
                           <img
                             src={relPost.featured_image}
@@ -297,22 +338,29 @@ export default async function SinglePostPage({
                       </div>
                       <div className="p-5">
                         {relPost.category && (
-                          <span className="inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full mb-2">
+                          <span
+                            className="inline-block text-xs px-3 py-1 rounded-full mb-2 font-medium"
+                            style={{
+                              backgroundColor: `${PRIMARY}15`,
+                              color: PRIMARY,
+                            }}
+                          >
                             {relPost.category.name}
                           </span>
                         )}
-                        <h3 className="text-lg font-semibold mb-2 line-clamp-2">
-                          <Link
+                        <h3 className="text-lg font-semibold mb-2 line-clamp-2 text-neutral-900">
+                          <HoverLink
                             href={`/blog/${relPost.slug}`}
-                            className="hover:text-blue-600 transition"
+                            className="hover:underline transition-colors duration-300"
+                            hoverColor={PRIMARY}
                           >
                             {relPost.title}
-                          </Link>
+                          </HoverLink>
                         </h3>
-                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                        <p className="text-neutral-600 text-sm mb-3 line-clamp-2">
                           {relPost.excerpt}
                         </p>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-neutral-500">
                           {new Date(relPost.published_at).toLocaleDateString(
                             "id-ID",
                             {
@@ -332,25 +380,35 @@ export default async function SinglePostPage({
         )}
 
         {/* CTA Section */}
-        <section className="py-16 bg-blue-900 text-white">
+        <section
+          className="py-16 text-white"
+          style={{
+            background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+          }}
+        >
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-3xl font-bold mb-4">
               Tertarik dengan Program Pelatihan Kami?
             </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
               Tingkatkan kompetensi Anda dengan program pelatihan profesional
               bersertifikasi BNSP
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/programs"
-                className="inline-block bg-white text-blue-900 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+                className="inline-block bg-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                style={{ color: PRIMARY }}
               >
                 Lihat Program
               </Link>
               <Link
                 href="/hubungi-kami"
-                className="inline-block border-2 border-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-900 transition"
+                className="inline-block border-2 border-white text-white px-8 py-3 rounded-xl font-semibold hover:bg-white transition-all duration-300 transform hover:scale-105"
+                style={{
+                  color: "white",
+                  borderColor: "white",
+                }}
               >
                 Hubungi Kami
               </Link>

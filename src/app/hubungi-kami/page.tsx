@@ -10,16 +10,24 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
+  const PRIMARY = "#DA1E1E";
+  const ACCENT = "#D91E43";
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-16">
+      <section
+        className="text-white py-16"
+        style={{
+          background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+        }}
+      >
         <div className="container mx-auto px-4">
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Hubungi Kami
             </h1>
-            <p className="text-lg text-blue-100">
+            <p className="text-lg text-white/90">
               Kami siap membantu Anda menemukan program pelatihan yang tepat
               untuk pengembangan kompetensi
             </p>
@@ -33,9 +41,11 @@ export default function ContactPage() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Contact Form - 2 columns */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-md p-8">
-                <h2 className="text-2xl font-bold mb-2">Kirim Pesan</h2>
-                <p className="text-gray-600 mb-6">
+              <div className="bg-white rounded-xl shadow-lg border-0 p-8">
+                <h2 className="text-2xl font-bold mb-2 text-neutral-900">
+                  Kirim Pesan
+                </h2>
+                <p className="text-neutral-600 mb-6">
                   Isi formulir di bawah ini dan tim kami akan menghubungi Anda
                   secepatnya
                 </p>
@@ -47,15 +57,23 @@ export default function ContactPage() {
             {/* Contact Info - 1 column */}
             <div className="lg:col-span-1">
               {/* Contact Details Card */}
-              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h3 className="text-xl font-bold mb-4">Informasi Kontak</h3>
+              <div className="bg-white rounded-xl shadow-lg border-0 p-6 mb-6">
+                <h3 className="text-xl font-bold mb-4 text-neutral-900">
+                  Informasi Kontak
+                </h3>
 
                 <div className="space-y-4">
                   {/* Phone */}
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{
+                        backgroundColor: `${PRIMARY}15`,
+                      }}
+                    >
                       <svg
-                        className="w-5 h-5 text-blue-600"
+                        className="w-5 h-5"
+                        style={{ color: PRIMARY }}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -69,10 +87,13 @@ export default function ContactPage() {
                       </svg>
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">Telepon</div>
+                      <div className="font-semibold text-neutral-900">
+                        Telepon
+                      </div>
                       <a
                         href="tel:+622112345678"
-                        className="text-blue-600 hover:underline"
+                        className="hover:underline transition-colors duration-300"
+                        style={{ color: PRIMARY }}
                       >
                         (021) 1234-5678
                       </a>
@@ -81,9 +102,15 @@ export default function ContactPage() {
 
                   {/* Email */}
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{
+                        backgroundColor: `${PRIMARY}15`,
+                      }}
+                    >
                       <svg
-                        className="w-5 h-5 text-blue-600"
+                        className="w-5 h-5"
+                        style={{ color: PRIMARY }}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -97,10 +124,13 @@ export default function ContactPage() {
                       </svg>
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">Email</div>
+                      <div className="font-semibold text-neutral-900">
+                        Email
+                      </div>
                       <a
                         href="mailto:admin@basstrainingacademy.com"
-                        className="text-blue-600 hover:underline"
+                        className="hover:underline transition-colors duration-300"
+                        style={{ color: PRIMARY }}
                       >
                         admin@basstrainingacademy.com
                       </a>
@@ -109,7 +139,7 @@ export default function ContactPage() {
 
                   {/* WhatsApp */}
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
                       <svg
                         className="w-5 h-5 text-green-600"
                         fill="currentColor"
@@ -119,14 +149,14 @@ export default function ContactPage() {
                       </svg>
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">
+                      <div className="font-semibold text-neutral-900">
                         WhatsApp
                       </div>
                       <a
                         href="https://wa.me/6281234567890"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-green-600 hover:underline"
+                        className="text-green-600 hover:underline transition-colors duration-300"
                       >
                         0812-3456-7890
                       </a>
@@ -135,9 +165,15 @@ export default function ContactPage() {
 
                   {/* Address */}
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style={{
+                        backgroundColor: `${PRIMARY}15`,
+                      }}
+                    >
                       <svg
-                        className="w-5 h-5 text-blue-600"
+                        className="w-5 h-5"
+                        style={{ color: PRIMARY }}
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -157,10 +193,10 @@ export default function ContactPage() {
                       </svg>
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900">
+                      <div className="font-semibold text-neutral-900">
                         Alamat Kantor
                       </div>
-                      <p className="text-gray-600 text-sm">
+                      <p className="text-neutral-600 text-sm">
                         Jl. Titihan Raya Blok B9/HF12-7A
                         <br />
                         Permata Bintaro
@@ -173,20 +209,28 @@ export default function ContactPage() {
               </div>
 
               {/* Business Hours Card */}
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h3 className="text-xl font-bold mb-4">Jam Operasional</h3>
+              <div className="bg-white rounded-xl shadow-lg border-0 p-6">
+                <h3 className="text-xl font-bold mb-4 text-neutral-900">
+                  Jam Operasional
+                </h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Senin - Jumat</span>
-                    <span className="font-semibold">09:00 - 17:00 WIB</span>
+                    <span className="text-neutral-600">Senin - Jumat</span>
+                    <span className="font-semibold text-neutral-900">
+                      09:00 - 17:00 WIB
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Sabtu</span>
-                    <span className="font-semibold">09:00 - 14:00 WIB</span>
+                    <span className="text-neutral-600">Sabtu</span>
+                    <span className="font-semibold text-neutral-900">
+                      09:00 - 14:00 WIB
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Minggu & Libur</span>
-                    <span className="text-red-600 font-semibold">Tutup</span>
+                    <span className="text-neutral-600">Minggu & Libur</span>
+                    <span className="font-semibold" style={{ color: PRIMARY }}>
+                      Tutup
+                    </span>
                   </div>
                 </div>
               </div>
@@ -196,10 +240,12 @@ export default function ContactPage() {
       </section>
 
       {/* Map Section (Optional) */}
-      <section className="py-12 bg-gray-100">
+      <section className="py-12 bg-neutral-100">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-8">Lokasi Kami</h2>
-          <div className="bg-white rounded-lg shadow-md overflow-hidden h-96">
+          <h2 className="text-3xl font-bold text-center mb-8 text-neutral-900">
+            Lokasi Kami
+          </h2>
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden h-96">
             {/* Google Maps Embed - Replace with your actual location */}
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3965.5227!2d106.7!3d-6.3!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNsKwMTgnMDAuMCJTIDEwNsKwNDInMDAuMCJF!5e0!3m2!1sen!2sid!4v1234567890"

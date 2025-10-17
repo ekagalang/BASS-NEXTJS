@@ -1,6 +1,8 @@
 // src/app/programs/page.tsx
 import Link from "next/link";
 import { Metadata } from "next";
+import HoverLink from "@/components/ui/HoverLink";
+import { HoverButton } from "@/components/ui/HoverButton";
 
 export const metadata: Metadata = {
   title: "Program Pelatihan - BASS Training Academy",
@@ -81,16 +83,24 @@ export default async function ProgramsPage({
 
   const { data: programs, pagination } = programsData;
 
+  const PRIMARY = "#DA1E1E";
+  const ACCENT = "#D91E43";
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-neutral-50">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-16">
+      <section
+        className="text-white py-20"
+        style={{
+          background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+        }}
+      >
         <div className="container mx-auto px-4">
           <div className="max-w-3xl">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Program Pelatihan Profesional
             </h1>
-            <p className="text-lg text-blue-100">
+            <p className="text-lg text-white/90">
               Temukan program pelatihan yang sesuai dengan kebutuhan
               pengembangan kompetensi Anda
             </p>
@@ -104,20 +114,30 @@ export default async function ProgramsPage({
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Sidebar Filter */}
             <aside className="lg:w-1/4">
-              <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
-                <h3 className="text-xl font-semibold mb-4">Filter Program</h3>
+              <div className="bg-white rounded-xl shadow-lg border-0 p-6 sticky top-4">
+                <h3 className="text-xl font-semibold mb-4 text-neutral-900">
+                  Filter Program
+                </h3>
 
                 {/* Category Filter */}
                 <div className="mb-6">
-                  <h4 className="font-medium mb-3 text-gray-700">Kategori</h4>
+                  <h4 className="font-medium mb-3 text-neutral-700">
+                    Kategori
+                  </h4>
                   <div className="space-y-2">
                     <Link
                       href="/programs"
-                      className={`block px-3 py-2 rounded-lg transition ${
+                      className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
                         !params.category
-                          ? "bg-blue-50 text-blue-700 font-medium"
-                          : "text-gray-600 hover:bg-gray-50"
+                          ? "font-medium shadow-md"
+                          : "text-neutral-600 hover:bg-neutral-50"
                       }`}
+                      style={{
+                        backgroundColor: !params.category
+                          ? `${PRIMARY}15`
+                          : "transparent",
+                        color: !params.category ? PRIMARY : undefined,
+                      }}
                     >
                       Semua Kategori
                     </Link>
@@ -125,11 +145,21 @@ export default async function ProgramsPage({
                       <Link
                         key={cat.id}
                         href={`/programs?category=${cat.id}`}
-                        className={`block px-3 py-2 rounded-lg transition ${
+                        className={`block px-3 py-2 rounded-lg transition-all duration-300 ${
                           params.category === cat.id.toString()
-                            ? "bg-blue-50 text-blue-700 font-medium"
-                            : "text-gray-600 hover:bg-gray-50"
+                            ? "font-medium shadow-md"
+                            : "text-neutral-600 hover:bg-neutral-50"
                         }`}
+                        style={{
+                          backgroundColor:
+                            params.category === cat.id.toString()
+                              ? `${PRIMARY}15`
+                              : "transparent",
+                          color:
+                            params.category === cat.id.toString()
+                              ? PRIMARY
+                              : undefined,
+                        }}
                       >
                         {cat.name}
                       </Link>
@@ -138,9 +168,11 @@ export default async function ProgramsPage({
                 </div>
 
                 {/* Price Range Info */}
-                <div className="pt-6 border-t">
-                  <h4 className="font-medium mb-3 text-gray-700">Info Harga</h4>
-                  <p className="text-sm text-gray-600">
+                <div className="pt-6 border-t border-neutral-200">
+                  <h4 className="font-medium mb-3 text-neutral-700">
+                    Info Harga
+                  </h4>
+                  <p className="text-sm text-neutral-600">
                     Program tersedia mulai dari Rp 2.000.000 hingga Rp 5.500.000
                   </p>
                 </div>
@@ -158,9 +190,9 @@ export default async function ProgramsPage({
 
               {/* Programs Grid */}
               {programs.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-md p-12 text-center">
+                <div className="bg-white rounded-xl shadow-lg border-0 p-12 text-center">
                   <svg
-                    className="w-16 h-16 mx-auto mb-4 text-gray-300"
+                    className="w-16 h-16 mx-auto mb-4 text-neutral-300"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -172,16 +204,17 @@ export default async function ProgramsPage({
                       d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <h3 className="text-xl font-semibold mb-2">
+                  <h3 className="text-xl font-semibold mb-2 text-neutral-900">
                     Tidak Ada Program
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-neutral-600">
                     Program yang Anda cari tidak ditemukan. Coba filter lain
                     atau hubungi kami.
                   </p>
                   <Link
                     href="/programs"
-                    className="inline-block mt-4 text-blue-600 hover:underline"
+                    className="inline-block mt-4 font-medium hover:underline transition-colors duration-300"
+                    style={{ color: PRIMARY }}
                   >
                     Reset Filter
                   </Link>
@@ -192,10 +225,17 @@ export default async function ProgramsPage({
                     {programs.map((program: any) => (
                       <article
                         key={program.id}
-                        className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow"
+                        className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
                       >
                         {/* Program Image */}
-                        <div className="h-48 bg-gradient-to-br from-blue-500 to-blue-700 relative">
+                        <div
+                          className="h-48 relative"
+                          style={{
+                            background: program.featured_image
+                              ? "transparent"
+                              : `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                          }}
+                        >
                           {program.featured_image ? (
                             <img
                               src={program.featured_image}
@@ -210,7 +250,7 @@ export default async function ProgramsPage({
 
                           {/* Status Badge */}
                           {program.status === "upcoming" && (
-                            <span className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                            <span className="absolute top-3 right-3 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
                               Segera Dibuka
                             </span>
                           )}
@@ -220,26 +260,33 @@ export default async function ProgramsPage({
                         <div className="p-5">
                           {/* Category Badge */}
                           {program.category && (
-                            <span className="inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full mb-3">
+                            <span
+                              className="inline-block text-xs px-3 py-1 rounded-full mb-3 font-medium"
+                              style={{
+                                backgroundColor: `${PRIMARY}15`,
+                                color: PRIMARY,
+                              }}
+                            >
                               {program.category.name}
                             </span>
                           )}
 
-                          <h3 className="text-lg font-semibold mb-2 line-clamp-2">
-                            <Link
+                          <h3 className="text-lg font-semibold mb-2 line-clamp-2 text-neutral-900">
+                            <HoverLink
                               href={`/programs/${program.slug}`}
-                              className="hover:text-blue-600 transition"
+                              className="hover:underline transition-all duration-300"
+                              hoverColor={PRIMARY}
                             >
                               {program.title}
-                            </Link>
+                            </HoverLink>
                           </h3>
 
-                          <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                          <p className="text-neutral-600 text-sm mb-4 line-clamp-3">
                             {program.excerpt || program.description}
                           </p>
 
                           {/* Program Meta */}
-                          <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                          <div className="flex items-center gap-4 text-sm text-neutral-500 mb-4">
                             <div className="flex items-center gap-1">
                               <svg
                                 className="w-4 h-4"
@@ -277,12 +324,15 @@ export default async function ProgramsPage({
                           </div>
 
                           {/* Price and CTA */}
-                          <div className="flex items-center justify-between pt-4 border-t">
+                          <div className="flex items-center justify-between pt-4 border-t border-neutral-200">
                             <div>
-                              <div className="text-xs text-gray-500 mb-1">
+                              <div className="text-xs text-neutral-500 mb-1">
                                 Investasi
                               </div>
-                              <div className="text-xl font-bold text-blue-900">
+                              <div
+                                className="text-xl font-bold"
+                                style={{ color: PRIMARY }}
+                              >
                                 {new Intl.NumberFormat("id-ID", {
                                   style: "currency",
                                   currency: "IDR",
@@ -290,12 +340,14 @@ export default async function ProgramsPage({
                                 }).format(program.price)}
                               </div>
                             </div>
-                            <Link
+                            <HoverButton
                               href={`/programs/${program.slug}`}
-                              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
+                              className="text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+                              defaultBg={PRIMARY}
+                              hoverBg={ACCENT}
                             >
                               Lihat Detail
-                            </Link>
+                            </HoverButton>
                           </div>
                         </div>
                       </article>
@@ -313,7 +365,7 @@ export default async function ProgramsPage({
                               ? `&category=${params.category}`
                               : ""
                           }${params.search ? `&search=${params.search}` : ""}`}
-                          className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition"
+                          className="px-4 py-2 bg-white border-2 border-neutral-200 rounded-xl hover:border-neutral-300 hover:shadow-md transition-all duration-300 font-medium"
                         >
                           Previous
                         </Link>
@@ -331,11 +383,15 @@ export default async function ProgramsPage({
                               ? `&category=${params.category}`
                               : ""
                           }${params.search ? `&search=${params.search}` : ""}`}
-                          className={`px-4 py-2 rounded-lg transition ${
+                          className={`px-4 py-2 rounded-xl transition-all duration-300 font-medium ${
                             pageNum === pagination.page
-                              ? "bg-blue-600 text-white"
-                              : "bg-white border hover:bg-gray-50"
+                              ? "text-white shadow-lg transform scale-105"
+                              : "bg-white border-2 border-neutral-200 hover:border-neutral-300 hover:shadow-md text-neutral-700"
                           }`}
+                          style={{
+                            backgroundColor:
+                              pageNum === pagination.page ? PRIMARY : undefined,
+                          }}
                         >
                           {pageNum}
                         </Link>
@@ -349,7 +405,7 @@ export default async function ProgramsPage({
                               ? `&category=${params.category}`
                               : ""
                           }${params.search ? `&search=${params.search}` : ""}`}
-                          className="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50 transition"
+                          className="px-4 py-2 bg-white border-2 border-neutral-200 rounded-xl hover:border-neutral-300 hover:shadow-md transition-all duration-300 font-medium"
                         >
                           Next
                         </Link>
@@ -364,18 +420,24 @@ export default async function ProgramsPage({
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 bg-blue-900 text-white">
+      <section
+        className="py-20 text-white"
+        style={{
+          background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+        }}
+      >
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Tidak Menemukan Program yang Sesuai?
           </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             Kami menyediakan program pelatihan kustom sesuai kebutuhan
             organisasi Anda
           </p>
           <Link
             href="/hubungi-kami"
-            className="inline-block bg-white text-blue-900 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+            className="inline-block bg-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+            style={{ color: PRIMARY }}
           >
             Konsultasi Gratis
           </Link>

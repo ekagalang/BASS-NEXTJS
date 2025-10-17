@@ -33,28 +33,25 @@ export async function GET(request: NextRequest) {
     // Build WHERE clause
     const conditions: string[] = [];
     const params: unknown[] = [];
-    let paramIndex = 1;
 
     if (status) {
-      conditions.push(`p.status = $${paramIndex}`);
+      conditions.push(`p.status = ?`);
       params.push(status);
-      paramIndex++;
     }
 
     if (search) {
-      conditions.push(`(p.title ILIKE $${paramIndex} OR p.excerpt ILIKE $${paramIndex})`);
-      params.push(`%${search}%`);
-      paramIndex++;
+      conditions.push(`(p.title LIKE ? OR p.excerpt LIKE ?)`);
+      params.push(`%${search}%`, `%${search}%`);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
     // Get total count
-    const countResult = await query(
+    const countResult = await query<Array<{ total: number }>>(
       `SELECT COUNT(*) as total FROM posts p ${whereClause}`,
       params
     );
-    const total = parseInt(countResult.rows[0].total);
+    const total = parseInt(String(countResult[0].total));
 
     // Get posts
     const postsQuery = `
@@ -75,7 +72,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN post_categories pc ON p.category_id = pc.id
       ${whereClause}
       ORDER BY p.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      LIMIT ? OFFSET ?
     `;
 
     const postsResult = await query(postsQuery, [...params, limit, offset]);
@@ -83,7 +80,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        data: postsResult.rows,
+        data: postsResult,
         pagination: {
           page,
           limit,
@@ -126,7 +123,6 @@ export async function POST(request: NextRequest) {
       content,
       featured_image,
       category_id,
-      tags,
       status,
       published_at,
     } = body;
@@ -139,14 +135,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Insert post
-    const result = await query(
+    // Convert published_at to MySQL datetime format
+    let mysqlPublishedAt = null;
+    if (published_at) {
+      const date = new Date(published_at);
+      // Format: YYYY-MM-DD HH:MM:SS
+      mysqlPublishedAt = date.toISOString().slice(0, 19).replace('T', ' ');
+    }
+
+    // Insert post (tags removed - column doesn't exist in schema)
+    const result = await query<{ insertId: number }>(
       `INSERT INTO posts (
         title, slug, excerpt, content, featured_image,
-        category_id, tags, status, published_at,
+        category_id, status, published_at, author_id,
         created_at, updated_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
-      RETURNING *`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
         title,
         slug,
@@ -154,16 +157,25 @@ export async function POST(request: NextRequest) {
         content,
         featured_image || null,
         category_id || null,
-        tags || [],
         status || "draft",
-        published_at || null,
+        mysqlPublishedAt,
+        authResult.user.id, // Add author_id (required field)
       ]
+    );
+
+    // Get the created post
+    const createdPost = await query(
+      `SELECT p.*, pc.name as category_name, pc.slug as category_slug
+       FROM posts p
+       LEFT JOIN post_categories pc ON p.category_id = pc.id
+       WHERE p.id = ?`,
+      [result.insertId]
     );
 
     return NextResponse.json({
       success: true,
       message: "Post created successfully",
-      data: result.rows[0],
+      data: createdPost[0],
     });
   } catch (error) {
     console.error("Error creating post:", error);

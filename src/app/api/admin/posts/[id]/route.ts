@@ -1,69 +1,58 @@
 // ============================================
-// ADMIN POSTS API
-// GET/POST /api/admin/posts
+// ADMIN SINGLE POST API
+// GET/PUT/DELETE /api/admin/posts/[id]
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/middleware/auth.middleware";
 import { postRepository } from "@/lib/repositories";
-import { postSchema } from "@/lib/validations";
-import { generateSlug } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/admin/posts
- * Get all posts (admin can see all status)
+ * GET /api/admin/posts/[id]
+ * Get single post by ID
  */
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const authResult = await requireAdmin(request);
     if (authResult instanceof NextResponse) {
       return authResult;
     }
 
-    const { searchParams } = new URL(request.url);
+    const { id } = await params;
+    const postId = parseInt(id);
 
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const sortBy = searchParams.get("sort_by") || "created_at";
-    const sortOrder = (searchParams.get("sort_order") || "desc") as
-      | "asc"
-      | "desc";
-
-    const filters: any = {};
-
-    if (searchParams.get("category_id")) {
-      filters.category_id = parseInt(searchParams.get("category_id")!);
+    if (isNaN(postId)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid post ID" },
+        { status: 400 }
+      );
     }
 
-    if (searchParams.get("status")) {
-      filters.status = searchParams.get("status")!;
-    }
+    const post = await postRepository.findById(postId);
 
-    if (searchParams.get("search")) {
-      filters.search = searchParams.get("search")!;
+    if (!post) {
+      return NextResponse.json(
+        { success: false, message: "Post not found" },
+        { status: 404 }
+      );
     }
-
-    const result = await postRepository.findAllWithFilters(filters, {
-      page,
-      limit,
-      sortBy,
-      sortOrder,
-    });
 
     return NextResponse.json({
       success: true,
-      data: result.data,
-      pagination: result.pagination,
+      data: post,
     });
   } catch (error: any) {
-    console.error("Admin get posts error:", error);
+    console.error("Admin get post error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to fetch posts",
+        message: "Failed to fetch post",
         error: error.message,
       },
       { status: 500 }
@@ -72,80 +61,175 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/admin/posts
- * Create new post
+ * PUT /api/admin/posts/[id]
+ * Update post by ID
  */
-export async function POST(request: NextRequest) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const authResult = await requireAdmin(request);
     if (authResult instanceof NextResponse) {
       return authResult;
     }
 
-    const { user } = authResult;
+    const { id } = await params;
+    const postId = parseInt(id);
+
+    if (isNaN(postId)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid post ID" },
+        { status: 400 }
+      );
+    }
+
+    // Check if post exists
+    const existingPost = await postRepository.findById(postId);
+    if (!existingPost) {
+      return NextResponse.json(
+        { success: false, message: "Post not found" },
+        { status: 404 }
+      );
+    }
+
     const body = await request.json();
+    const {
+      title,
+      slug,
+      excerpt,
+      content,
+      featured_image,
+      category_id,
+      status,
+      published_at,
+    } = body;
 
-    // Auto-generate slug
-    if (!body.slug && body.title) {
-      body.slug = generateSlug(body.title);
-    }
-
-    // Set author
-    body.author_id = user.id;
-
-    // Validate
-    const validation = postSchema.safeParse(body);
-
-    if (!validation.success) {
+    // Validate required fields
+    if (!title || !slug || !content) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Validation error",
-          errors: validation.error.errors,
-        },
+        { success: false, message: "Title, slug, and content are required" },
         { status: 400 }
       );
     }
 
-    const data = validation.data;
-
-    // Check slug exists
-    const existingPost = await postRepository.findOneBy("slug", data.slug);
-    if (existingPost) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Slug already exists",
-        },
-        { status: 400 }
-      );
+    // Check if slug is taken by another post
+    if (slug !== existingPost.slug) {
+      const slugExists = await postRepository.findOneBy("slug", slug);
+      if (slugExists && slugExists.id !== postId) {
+        return NextResponse.json(
+          { success: false, message: "Slug already exists" },
+          { status: 400 }
+        );
+      }
     }
 
-    // Create post
-    const postId = await postRepository.create({
-      ...data,
-      author_id: user.id,
-      created_at: new Date(),
+    // Convert published_at to MySQL datetime format
+    let mysqlPublishedAt = null;
+    if (published_at) {
+      const date = new Date(published_at);
+      // Format: YYYY-MM-DD HH:MM:SS
+      mysqlPublishedAt = date.toISOString().slice(0, 19).replace('T', ' ');
+    }
+
+    // Update post (tags removed - column doesn't exist in schema)
+    const updateData: any = {
+      title,
+      slug,
+      excerpt: excerpt || null,
+      content,
+      featured_image: featured_image || null,
+      category_id: category_id || null,
+      status: status || "draft",
+      published_at: mysqlPublishedAt,
       updated_at: new Date(),
+    };
+
+    const updated = await postRepository.update(postId, updateData);
+
+    if (!updated) {
+      return NextResponse.json(
+        { success: false, message: "Failed to update post" },
+        { status: 500 }
+      );
+    }
+
+    // Get updated post
+    const updatedPost = await postRepository.findById(postId);
+
+    return NextResponse.json({
+      success: true,
+      message: "Post updated successfully",
+      data: updatedPost,
     });
-
-    const post = await postRepository.findById(postId);
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Post berhasil dibuat",
-        data: post,
-      },
-      { status: 201 }
-    );
   } catch (error: any) {
-    console.error("Admin create post error:", error);
+    console.error("Admin update post error:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to create post",
+        message: "Failed to update post",
+        error: error.message,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/admin/posts/[id]
+ * Delete post by ID
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authResult = await requireAdmin(request);
+    if (authResult instanceof NextResponse) {
+      return authResult;
+    }
+
+    const { id } = await params;
+    const postId = parseInt(id);
+
+    if (isNaN(postId)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid post ID" },
+        { status: 400 }
+      );
+    }
+
+    // Check if post exists
+    const existingPost = await postRepository.findById(postId);
+    if (!existingPost) {
+      return NextResponse.json(
+        { success: false, message: "Post not found" },
+        { status: 404 }
+      );
+    }
+
+    // Delete post
+    const deleted = await postRepository.delete(postId);
+
+    if (!deleted) {
+      return NextResponse.json(
+        { success: false, message: "Failed to delete post" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Post deleted successfully",
+    });
+  } catch (error: any) {
+    console.error("Admin delete post error:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Failed to delete post",
         error: error.message,
       },
       { status: 500 }

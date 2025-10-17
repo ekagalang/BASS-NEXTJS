@@ -14,6 +14,8 @@ export default function ProgramsClient({
   initialSort = "created_at",
   totalPrograms,
 }: ProgramsClientProps) {
+  const PRIMARY = "#DA1E1E";
+  const ACCENT = "#D91E43";
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(initialSearch);
@@ -46,21 +48,27 @@ export default function ProgramsClient({
     <div className="mb-6">
       {/* Results Count */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div className="text-gray-600">
-          Menampilkan <span className="font-semibold">{totalPrograms}</span>{" "}
+        <div className="text-neutral-600">
+          Menampilkan{" "}
+          <span className="font-semibold" style={{ color: PRIMARY }}>
+            {totalPrograms}
+          </span>{" "}
           program pelatihan
         </div>
 
         {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
-          <label htmlFor="sort" className="text-sm text-gray-600">
+          <label htmlFor="sort" className="text-sm text-neutral-600">
             Urutkan:
           </label>
           <select
             id="sort"
             value={sort}
             onChange={(e) => handleSortChange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="px-4 py-2 border-2 border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent bg-white shadow-sm hover:shadow-md transition-all duration-300"
+            style={{
+              focusRing: PRIMARY,
+            }}
           >
             <option value="created_at">Terbaru</option>
             <option value="title">Nama (A-Z)</option>
@@ -79,10 +87,10 @@ export default function ProgramsClient({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari program pelatihan..."
-              className="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 pl-12 border-2 border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent shadow-sm hover:shadow-md transition-all duration-300"
             />
             <svg
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -97,7 +105,17 @@ export default function ProgramsClient({
           </div>
           <button
             type="submit"
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition"
+            className="px-6 py-3 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105"
+            style={{
+              backgroundColor: PRIMARY,
+              transition: "background-color 300ms",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = ACCENT)
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = PRIMARY)
+            }
           >
             Cari
           </button>
@@ -110,7 +128,7 @@ export default function ProgramsClient({
                 params.delete("search");
                 router.push(`/programs?${params.toString()}`);
               }}
-              className="px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+              className="px-4 py-3 bg-neutral-200 text-neutral-700 rounded-xl hover:bg-neutral-300 transition-all duration-300 font-medium"
             >
               Reset
             </button>

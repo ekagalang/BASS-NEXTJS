@@ -35,6 +35,9 @@ interface RecentItem {
 }
 
 export default function AdminDashboard() {
+  const PRIMARY = "#DA1E1E";
+  const ACCENT = "#D91E43";
+
   const [stats, setStats] = useState<Stats>({
     programs: { total: 0, published: 0, draft: 0 },
     posts: { total: 0, published: 0, draft: 0 },
@@ -140,8 +143,13 @@ export default function AdminDashboard() {
         {/* Programs Card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-blue-600" />
+            <div
+              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              style={{
+                backgroundColor: `${PRIMARY}15`,
+              }}
+            >
+              <GraduationCap className="w-6 h-6" style={{ color: PRIMARY }} />
             </div>
             <span className="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
               +12%
@@ -254,12 +262,47 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link
             href="/admin/programs/new"
-            className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+            className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg transition-all group"
+            style={{
+              borderColor: undefined,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = PRIMARY;
+              e.currentTarget.style.backgroundColor = `${PRIMARY}10`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "#d1d5db";
+              e.currentTarget.style.backgroundColor = "transparent";
+            }}
           >
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3 group-hover:bg-blue-500 transition-colors">
-              <Plus className="w-6 h-6 text-blue-600 group-hover:text-white" />
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-colors"
+              style={{
+                backgroundColor: `${PRIMARY}15`,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = PRIMARY;
+                const icon = e.currentTarget.querySelector("svg");
+                if (icon) icon.style.color = "white";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = `${PRIMARY}15`;
+                const icon = e.currentTarget.querySelector("svg");
+                if (icon) icon.style.color = PRIMARY;
+              }}
+            >
+              <Plus className="w-6 h-6 transition-colors" style={{ color: PRIMARY }} />
             </div>
-            <span className="text-sm font-semibold text-gray-700 group-hover:text-blue-600">
+            <span
+              className="text-sm font-semibold text-gray-700 transition-colors"
+              style={{}}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = PRIMARY;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#374151";
+              }}
+            >
               New Program
             </span>
           </Link>
@@ -310,14 +353,18 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-bold text-gray-900">Recent Programs</h2>
             <Link
               href="/admin/programs"
-              className="text-sm text-blue-600 hover:text-blue-700 font-semibold"
+              className="text-sm font-semibold hover:underline transition-colors duration-300"
+              style={{ color: PRIMARY }}
             >
               View all →
             </Link>
           </div>
           {isLoading ? (
             <div className="text-center py-8">
-              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+              <div
+                className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto"
+                style={{ borderColor: PRIMARY, borderTopColor: "transparent" }}
+              />
             </div>
           ) : recentPrograms.length === 0 ? (
             <div className="text-center py-8 text-gray-500">

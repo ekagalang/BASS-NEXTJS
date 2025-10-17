@@ -37,6 +37,7 @@ export default function Header() {
     { name: "Program", href: "/programs" },
     { name: "Blog", href: "/blog" },
     { name: "Tentang", href: "/tentang-kami" },
+    { name: "Visi & Misi", href: "/visi-misi" },
     { name: "Kontak", href: "/hubungi-kami" },
   ];
 

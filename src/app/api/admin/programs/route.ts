@@ -62,8 +62,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.data,
-      pagination: result.pagination,
+      data: {
+        data: result.data,
+        pagination: result.pagination,
+      },
     });
   } catch (error: any) {
     console.error("Admin get programs error:", error);

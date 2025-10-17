@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
+import HoverLink from "@/components/ui/HoverLink";
+import { HoverButton, HoverAnchor } from "@/components/ui/HoverButton";
 
 // Generate metadata dynamically
 export async function generateMetadata({
@@ -161,6 +163,9 @@ export default async function SingleProgramPage({
     ],
   };
 
+  const PRIMARY = "#DA1E1E";
+  const ACCENT = "#D91E43";
+
   return (
     <>
       {/* Structured Data */}
@@ -177,26 +182,41 @@ export default async function SingleProgramPage({
         }}
       />
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-neutral-50">
         {/* Breadcrumb */}
-        <div className="bg-white border-b">
+        <div className="bg-white border-b border-neutral-200">
           <div className="container mx-auto px-4 py-4">
-            <nav className="flex items-center gap-2 text-sm text-gray-600">
-              <Link href="/" className="hover:text-blue-600">
+            <nav className="flex items-center gap-2 text-sm text-neutral-600">
+              <HoverLink
+                href="/"
+                className="hover:underline transition-colors duration-300"
+                hoverColor={PRIMARY}
+              >
                 Home
-              </Link>
+              </HoverLink>
               <span>/</span>
-              <Link href="/programs" className="hover:text-blue-600">
+              <HoverLink
+                href="/programs"
+                className="hover:underline transition-colors duration-300"
+                hoverColor={PRIMARY}
+              >
                 Programs
-              </Link>
+              </HoverLink>
               <span>/</span>
-              <span className="text-gray-900 font-medium">{program.title}</span>
+              <span className="text-neutral-900 font-medium">
+                {program.title}
+              </span>
             </nav>
           </div>
         </div>
 
         {/* Program Hero */}
-        <section className="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-12">
+        <section
+          className="text-white py-16"
+          style={{
+            background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+          }}
+        >
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
@@ -211,7 +231,7 @@ export default async function SingleProgramPage({
                   {program.title}
                 </h1>
 
-                <p className="text-lg text-blue-100 mb-6">
+                <p className="text-lg text-white/90 mb-6">
                   {program.excerpt || program.description?.substring(0, 200)}
                 </p>
 
@@ -271,7 +291,7 @@ export default async function SingleProgramPage({
 
                 {/* Price */}
                 <div className="mb-6">
-                  <div className="text-sm text-blue-200 mb-1">
+                  <div className="text-sm text-white/80 mb-1">
                     Investasi Program
                   </div>
                   <div className="text-4xl font-bold">
@@ -287,23 +307,28 @@ export default async function SingleProgramPage({
                 <div className="flex flex-wrap gap-4">
                   <Link
                     href={`/hubungi-kami?program=${program.slug}`}
-                    className="bg-white text-blue-900 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+                    className="bg-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                    style={{ color: PRIMARY }}
                   >
                     Daftar Sekarang
                   </Link>
-                  <a
+                  <HoverAnchor
                     href={`https://wa.me/6281234567890?text=Halo, saya tertarik dengan program ${program.title}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="border-2 border-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-900 transition"
+                    className="border-2 border-white px-8 py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                    defaultColor="white"
+                    hoverColor={PRIMARY}
+                    defaultBg="transparent"
+                    hoverBg="white"
                   >
                     WhatsApp Kami
-                  </a>
+                  </HoverAnchor>
                 </div>
               </div>
 
               {/* Program Image */}
-              <div className="relative h-[300px] md:h-[400px] rounded-lg overflow-hidden">
+              <div className="relative h-[300px] md:h-[400px] rounded-xl overflow-hidden shadow-2xl">
                 {program.featured_image ? (
                   <img
                     src={program.featured_image}
@@ -311,7 +336,12 @@ export default async function SingleProgramPage({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-6xl font-bold">
+                  <div
+                    className="w-full h-full flex items-center justify-center text-white text-6xl font-bold"
+                    style={{
+                      background: `linear-gradient(135deg, ${ACCENT} 0%, ${PRIMARY} 100%)`,
+                    }}
+                  >
                     {program.title.charAt(0)}
                   </div>
                 )}
@@ -327,22 +357,24 @@ export default async function SingleProgramPage({
               {/* Left Column - Program Details */}
               <div className="lg:col-span-2">
                 {/* Description */}
-                <div className="bg-white rounded-lg shadow-md p-8 mb-8">
-                  <h2 className="text-2xl font-bold mb-4">Tentang Program</h2>
+                <div className="bg-white rounded-xl shadow-lg border-0 p-8 mb-8">
+                  <h2 className="text-2xl font-bold mb-4 text-neutral-900">
+                    Tentang Program
+                  </h2>
                   <div
-                    className="prose prose-blue max-w-none"
+                    className="prose prose-neutral max-w-none"
                     dangerouslySetInnerHTML={{ __html: program.description }}
                   />
                 </div>
 
                 {/* Learning Objectives */}
                 {program.learning_objectives && (
-                  <div className="bg-white rounded-lg shadow-md p-8 mb-8">
-                    <h2 className="text-2xl font-bold mb-4">
+                  <div className="bg-white rounded-xl shadow-lg border-0 p-8 mb-8">
+                    <h2 className="text-2xl font-bold mb-4 text-neutral-900">
                       Tujuan Pembelajaran
                     </h2>
                     <div
-                      className="prose prose-blue max-w-none"
+                      className="prose prose-neutral max-w-none"
                       dangerouslySetInnerHTML={{
                         __html: program.learning_objectives,
                       }}
@@ -352,12 +384,12 @@ export default async function SingleProgramPage({
 
                 {/* Target Participants */}
                 {program.target_participants && (
-                  <div className="bg-white rounded-lg shadow-md p-8 mb-8">
-                    <h2 className="text-2xl font-bold mb-4">
+                  <div className="bg-white rounded-xl shadow-lg border-0 p-8 mb-8">
+                    <h2 className="text-2xl font-bold mb-4 text-neutral-900">
                       Peserta yang Cocok
                     </h2>
                     <div
-                      className="prose prose-blue max-w-none"
+                      className="prose prose-neutral max-w-none"
                       dangerouslySetInnerHTML={{
                         __html: program.target_participants,
                       }}
@@ -367,26 +399,36 @@ export default async function SingleProgramPage({
 
                 {/* Instructors */}
                 {program.instructors && program.instructors.length > 0 && (
-                  <div className="bg-white rounded-lg shadow-md p-8">
-                    <h2 className="text-2xl font-bold mb-6">Instruktur</h2>
+                  <div className="bg-white rounded-xl shadow-lg border-0 p-8">
+                    <h2 className="text-2xl font-bold mb-6 text-neutral-900">
+                      Instruktur
+                    </h2>
                     <div className="space-y-6">
                       {program.instructors.map((instructor: any) => (
                         <div key={instructor.id} className="flex gap-4">
-                          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex-shrink-0 flex items-center justify-center text-white text-2xl font-bold">
+                          <div
+                            className="w-20 h-20 rounded-full flex-shrink-0 flex items-center justify-center text-white text-2xl font-bold shadow-lg"
+                            style={{
+                              background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                            }}
+                          >
                             {instructor.name.charAt(0)}
                           </div>
                           <div className="flex-grow">
-                            <h3 className="text-lg font-semibold mb-1">
+                            <h3 className="text-lg font-semibold mb-1 text-neutral-900">
                               {instructor.name}
                             </h3>
-                            <div className="text-sm text-gray-500 mb-2">
+                            <div
+                              className="text-sm mb-2 font-medium"
+                              style={{ color: PRIMARY }}
+                            >
                               {instructor.level === "master" &&
                                 "Master Trainer"}
                               {instructor.level === "senior" &&
                                 "Senior Trainer"}
                               {instructor.level === "regular" && "Trainer"}
                             </div>
-                            <p className="text-gray-600 text-sm">
+                            <p className="text-neutral-600 text-sm">
                               {instructor.bio}
                             </p>
                           </div>
@@ -400,15 +442,18 @@ export default async function SingleProgramPage({
               {/* Right Column - Sidebar */}
               <div className="lg:col-span-1">
                 {/* Registration Card */}
-                <div className="bg-white rounded-lg shadow-md p-6 mb-8 sticky top-4">
-                  <h3 className="text-xl font-bold mb-4">
+                <div className="bg-white rounded-xl shadow-lg border-0 p-6 mb-8 sticky top-4">
+                  <h3 className="text-xl font-bold mb-4 text-neutral-900">
                     Informasi Pendaftaran
                   </h3>
 
                   <div className="space-y-4 mb-6">
-                    <div className="flex justify-between items-center pb-3 border-b">
-                      <span className="text-gray-600">Harga</span>
-                      <span className="text-xl font-bold text-blue-900">
+                    <div className="flex justify-between items-center pb-3 border-b border-neutral-200">
+                      <span className="text-neutral-600">Harga</span>
+                      <span
+                        className="text-xl font-bold"
+                        style={{ color: PRIMARY }}
+                      >
                         {new Intl.NumberFormat("id-ID", {
                           style: "currency",
                           currency: "IDR",
@@ -417,22 +462,22 @@ export default async function SingleProgramPage({
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center pb-3 border-b">
-                      <span className="text-gray-600">Durasi</span>
-                      <span className="font-semibold">
+                    <div className="flex justify-between items-center pb-3 border-b border-neutral-200">
+                      <span className="text-neutral-600">Durasi</span>
+                      <span className="font-semibold text-neutral-900">
                         {program.duration || "3 Hari"}
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center pb-3 border-b">
-                      <span className="text-gray-600">Kapasitas</span>
-                      <span className="font-semibold">
+                    <div className="flex justify-between items-center pb-3 border-b border-neutral-200">
+                      <span className="text-neutral-600">Kapasitas</span>
+                      <span className="font-semibold text-neutral-900">
                         {program.max_participants} peserta
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Status</span>
+                      <span className="text-neutral-600">Status</span>
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-semibold ${
                           program.status === "active"
@@ -447,18 +492,24 @@ export default async function SingleProgramPage({
                     </div>
                   </div>
 
-                  <Link
+                  <HoverButton
                     href={`/hubungi-kami?program=${program.slug}`}
-                    className="block w-full bg-blue-600 text-white text-center px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition mb-3"
+                    className="block w-full text-white text-center px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 mb-3"
+                    defaultBg={PRIMARY}
+                    hoverBg={ACCENT}
                   >
                     Daftar Sekarang
-                  </Link>
+                  </HoverButton>
 
                   <a
                     href={`https://wa.me/6281234567890?text=Halo, saya tertarik dengan program ${program.title}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block w-full border-2 border-blue-600 text-blue-600 text-center px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+                    className="block w-full border-2 text-center px-6 py-3 rounded-xl font-semibold hover:bg-neutral-50 transition-all duration-300"
+                    style={{
+                      borderColor: PRIMARY,
+                      color: PRIMARY,
+                    }}
                   >
                     Tanya via WhatsApp
                   </a>
@@ -466,15 +517,20 @@ export default async function SingleProgramPage({
 
                 {/* Schedule Card */}
                 {program.schedules && program.schedules.length > 0 && (
-                  <div className="bg-white rounded-lg shadow-md p-6">
-                    <h3 className="text-xl font-bold mb-4">Jadwal Terdekat</h3>
+                  <div className="bg-white rounded-xl shadow-lg border-0 p-6">
+                    <h3 className="text-xl font-bold mb-4 text-neutral-900">
+                      Jadwal Terdekat
+                    </h3>
                     <div className="space-y-4">
                       {program.schedules.slice(0, 3).map((schedule: any) => (
                         <div
                           key={schedule.id}
-                          className="border border-gray-200 rounded-lg p-4"
+                          className="border-2 border-neutral-200 rounded-xl p-4 hover:shadow-md transition-all duration-300"
                         >
-                          <div className="flex items-center gap-2 text-blue-600 mb-2">
+                          <div
+                            className="flex items-center gap-2 mb-2 font-medium"
+                            style={{ color: PRIMARY }}
+                          >
                             <svg
                               className="w-5 h-5"
                               fill="none"
@@ -535,30 +591,41 @@ export default async function SingleProgramPage({
 
         {/* Related Programs */}
         {relatedPrograms.length > 0 && (
-          <section className="py-12 bg-gray-100">
+          <section className="py-12 bg-neutral-100">
             <div className="container mx-auto px-4">
-              <h2 className="text-3xl font-bold mb-8">Program Terkait</h2>
+              <h2 className="text-3xl font-bold mb-8 text-neutral-900">
+                Program Terkait
+              </h2>
               <div className="grid md:grid-cols-3 gap-6">
                 {relatedPrograms.map((relProgram: any) => (
                   <article
                     key={relProgram.id}
-                    className="bg-white rounded-lg overflow-hidden shadow-md hover:shadow-xl transition"
+                    className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
                   >
-                    <div className="h-48 bg-gradient-to-br from-blue-400 to-blue-600"></div>
+                    <div
+                      className="h-48"
+                      style={{
+                        background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+                      }}
+                    ></div>
                     <div className="p-5">
-                      <h3 className="text-lg font-semibold mb-2 line-clamp-2">
-                        <Link
+                      <h3 className="text-lg font-semibold mb-2 line-clamp-2 text-neutral-900">
+                        <HoverLink
                           href={`/programs/${relProgram.slug}`}
-                          className="hover:text-blue-600 transition"
+                          className="hover:underline transition-colors duration-300"
+                          hoverColor={PRIMARY}
                         >
                           {relProgram.title}
-                        </Link>
+                        </HoverLink>
                       </h3>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                      <p className="text-neutral-600 text-sm mb-4 line-clamp-2">
                         {relProgram.excerpt}
                       </p>
                       <div className="flex justify-between items-center">
-                        <div className="text-lg font-bold text-blue-900">
+                        <div
+                          className="text-lg font-bold"
+                          style={{ color: PRIMARY }}
+                        >
                           {new Intl.NumberFormat("id-ID", {
                             style: "currency",
                             currency: "IDR",
@@ -567,7 +634,8 @@ export default async function SingleProgramPage({
                         </div>
                         <Link
                           href={`/programs/${relProgram.slug}`}
-                          className="text-blue-600 hover:underline text-sm font-semibold"
+                          className="hover:underline text-sm font-semibold transition-colors duration-300"
+                          style={{ color: PRIMARY }}
                         >
                           Lihat Detail →
                         </Link>
@@ -581,17 +649,23 @@ export default async function SingleProgramPage({
         )}
 
         {/* CTA Section */}
-        <section className="py-16 bg-blue-900 text-white">
+        <section
+          className="py-20 text-white"
+          style={{
+            background: `linear-gradient(135deg, ${PRIMARY} 0%, ${ACCENT} 100%)`,
+          }}
+        >
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Siap Meningkatkan Kompetensi?
             </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
               Daftarkan diri Anda sekarang dan dapatkan sertifikasi profesional
             </p>
             <Link
               href={`/hubungi-kami?program=${program.slug}`}
-              className="inline-block bg-white text-blue-900 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+              className="inline-block bg-white px-8 py-3 rounded-xl font-semibold shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+              style={{ color: PRIMARY }}
             >
               Hubungi Kami
             </Link>
