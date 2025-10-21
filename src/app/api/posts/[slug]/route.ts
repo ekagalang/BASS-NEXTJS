@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
@@ -8,33 +8,41 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    // Fetch post with category and author
-    const query = `
-      SELECT 
-        p.*,
-        pc.name as category_name,
-        pc.slug as category_slug,
-        u.name as author_name,
-        u.email as author_email
-      FROM posts p
-      LEFT JOIN post_categories pc ON p.category_id = pc.id
-      LEFT JOIN users u ON p.author_id = u.id
-      WHERE p.slug = ? AND p.status = 'published'
-      LIMIT 1
-    `;
+    // Fetch post with category and author using Prisma
+    const post = await prisma.post.findFirst({
+      where: {
+        slug: slug,
+        status: "published",
+      },
+      include: {
+        category: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+        author: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
 
-    const results = await db.query<any[]>(query, [slug]);
-
-    if (results.length === 0) {
+    if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });
     }
 
-    const post = results[0];
-
     // Increment views
-    await db.query("UPDATE posts SET views = views + 1 WHERE id = ?", [
-      post.id,
-    ]);
+    await prisma.post.update({
+      where: { id: post.id },
+      data: {
+        views: {
+          increment: 1,
+        },
+      },
+    });
 
     // Build response
     const response = {
@@ -43,26 +51,18 @@ export async function GET(
       slug: post.slug,
       content: post.content,
       excerpt: post.excerpt,
-      featured_image: post.featured_image,
-      category_id: post.category_id,
-      author_id: post.author_id,
+      featured_image: post.featuredImage,
+      category_id: post.categoryId,
+      author_id: post.authorId,
       status: post.status,
       views: post.views,
-      published_at: post.published_at,
-      meta_title: post.meta_title,
-      meta_description: post.meta_description,
-      created_at: post.created_at,
-      updated_at: post.updated_at,
-      category: post.category_id
-        ? {
-            name: post.category_name,
-            slug: post.category_slug,
-          }
-        : null,
-      author: {
-        name: post.author_name,
-        email: post.author_email,
-      },
+      published_at: post.publishedAt,
+      meta_title: post.metaTitle,
+      meta_description: post.metaDescription,
+      created_at: post.createdAt,
+      updated_at: post.updatedAt,
+      category: post.category,
+      author: post.author,
     };
 
     return NextResponse.json(response, {

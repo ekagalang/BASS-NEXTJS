@@ -1,16 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run dev:*)",
-      "Bash(mysql:*)",
-      "Bash(node:*)",
-      "Bash(taskkill:*)",
-      "Bash(curl:*)",
-      "mcp__ide__getDiagnostics",
-      "Bash(npm run build)",
-      "Bash(ls:*)",
-      "Bash(mv:*)",
-      "Bash(tree:*)"
+      "Bash(timeout 10)",
+      "Bash(python -m json.tool)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3000)",
+      "Bash(powershell -Command \"Stop-Process -Id 14988 -Force\")"
     ],
     "deny": [],
     "ask": []

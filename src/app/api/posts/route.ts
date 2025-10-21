@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+import { postRepository } from "@/lib/repositories/post.repository";
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,81 +11,85 @@ export async function GET(request: NextRequest) {
     const category_id = searchParams.get("category_id");
     const search = searchParams.get("search");
 
-    const offset = (page - 1) * limit;
-
-    // Build WHERE clause
-    const whereClauses: string[] = ["p.status = ?", "p.published_at <= NOW()"];
-    const params: any[] = ["published"];
+    // Build filters for Prisma
+    const filters: any = {
+      status: "published",
+    };
 
     if (category_id) {
-      whereClauses.push("p.category_id = ?");
-      params.push(parseInt(category_id));
+      filters.categoryId = parseInt(category_id);
     }
 
     if (search) {
-      whereClauses.push(
-        "(p.title LIKE ? OR p.content LIKE ? OR p.excerpt LIKE ?)"
-      );
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      filters.search = search;
     }
 
-    const whereClause = whereClauses.join(" AND ");
+    // Use Prisma to fetch posts with published date filter
+    const where: any = {
+      status: "published",
+      publishedAt: {
+        lte: new Date(),
+      },
+    };
 
-    // Count total
-    const countQuery = `
-      SELECT COUNT(*) as total 
-      FROM posts p 
-      WHERE ${whereClause}
-    `;
-    const countResult = await db.query<any[]>(countQuery, params);
-    const total = countResult[0]?.total || 0;
+    if (category_id) {
+      where.categoryId = parseInt(category_id);
+    }
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search } },
+        { content: { contains: search } },
+        { excerpt: { contains: search } },
+      ];
+    }
+
+    // Get total count
+    const total = await prisma.post.count({ where });
 
     // Fetch posts with category and author
-    const query = `
-      SELECT 
-        p.id,
-        p.title,
-        p.slug,
-        p.excerpt,
-        p.featured_image,
-        p.category_id,
-        p.author_id,
-        p.views,
-        p.published_at,
-        p.created_at,
-        pc.name as category_name,
-        pc.slug as category_slug,
-        u.name as author_name
-      FROM posts p
-      LEFT JOIN post_categories pc ON p.category_id = pc.id
-      LEFT JOIN users u ON p.author_id = u.id
-      WHERE ${whereClause}
-      ORDER BY p.published_at DESC
-      LIMIT ? OFFSET ?
-    `;
+    const posts = await prisma.post.findMany({
+      where,
+      include: {
+        category: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+        author: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        publishedAt: "desc",
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
 
-    const posts = await db.query<any[]>(query, [...params, limit, offset]);
-
-    // Transform data
-    const transformedData = posts.map((row) => ({
-      id: row.id,
-      title: row.title,
-      slug: row.slug,
-      excerpt: row.excerpt,
-      featured_image: row.featured_image,
-      category_id: row.category_id,
-      author_id: row.author_id,
-      views: row.views,
-      published_at: row.published_at,
-      created_at: row.created_at,
-      category: row.category_id
+    // Transform data to match expected format
+    const transformedData = posts.map((post) => ({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      featured_image: post.featuredImage,
+      category_id: post.categoryId,
+      author_id: post.authorId,
+      views: post.views,
+      published_at: post.publishedAt,
+      created_at: post.createdAt,
+      category: post.category
         ? {
-            name: row.category_name,
-            slug: row.category_slug,
+            name: post.category.name,
+            slug: post.category.slug,
           }
         : null,
       author: {
-        name: row.author_name,
+        name: post.author.name,
       },
     }));
 

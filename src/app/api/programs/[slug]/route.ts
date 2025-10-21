@@ -1,6 +1,6 @@
 // src/app/api/programs/[slug]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
@@ -9,109 +9,140 @@ export async function GET(
   try {
     const { slug } = params;
 
-    // Fetch program with category
-    const query = `
-      SELECT 
-        p.*,
-        pc.name as category_name,
-        pc.slug as category_slug
-      FROM programs p
-      LEFT JOIN program_categories pc ON p.category_id = pc.id
-      WHERE p.slug = ?
-      LIMIT 1
-    `;
+    // Fetch program with relations using Prisma
+    const program = await prisma.program.findUnique({
+      where: { slug },
+      include: {
+        category: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+        programInstructors: {
+          where: {
+            instructor: {
+              status: "active",
+            },
+          },
+          include: {
+            instructor: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                level: true,
+                bio: true,
+                expertise: true,
+              },
+            },
+          },
+          orderBy: {
+            instructor: {
+              displayOrder: "asc",
+            },
+          },
+        },
+        schedules: {
+          where: {
+            status: "upcoming",
+          },
+          select: {
+            id: true,
+            startDate: true,
+            endDate: true,
+            startTime: true,
+            endTime: true,
+            location: true,
+            address: true,
+            maxSeats: true,
+            availableSeats: true,
+            price: true,
+            status: true,
+          },
+          orderBy: {
+            startDate: "asc",
+          },
+          take: 5,
+        },
+      },
+    });
 
-    const results = await db.query<any[]>(query, [slug]);
-
-    if (results.length === 0) {
+    if (!program) {
       return NextResponse.json({ error: "Program not found" }, { status: 404 });
     }
 
-    const program = results[0];
-
-    // Fetch instructors for this program
-    const instructorsQuery = `
-      SELECT 
-        i.id,
-        i.name,
-        i.slug,
-        i.level,
-        i.bio,
-        i.expertise
-      FROM instructors i
-      INNER JOIN program_instructors pi ON i.id = pi.instructor_id
-      WHERE pi.program_id = ? AND i.status = 'active'
-      ORDER BY i.display_order ASC
-    `;
-
-    const instructors = await db.query<any[]>(instructorsQuery, [program.id]);
-
-    // Fetch schedules for this program
-    const schedulesQuery = `
-      SELECT 
-        id,
-        start_date,
-        end_date,
-        start_time,
-        end_time,
-        location,
-        address,
-        max_seats,
-        available_seats,
-        price,
-        status
-      FROM schedules
-      WHERE program_id = ? AND status = 'upcoming'
-      ORDER BY start_date ASC
-      LIMIT 5
-    `;
-
-    const schedules = await db.query<any[]>(schedulesQuery, [program.id]);
-
-    // Transform schedules (no calculation needed, available_seats already in DB)
-    const schedulesWithSeats = schedules.map((schedule) => ({
-      ...schedule,
-      max_participants: schedule.max_seats,
-      registered_participants: schedule.max_seats - schedule.available_seats,
+    // Transform schedules with participant counts
+    const schedulesWithSeats = program.schedules.map((schedule) => ({
+      id: schedule.id,
+      start_date: schedule.startDate,
+      end_date: schedule.endDate,
+      start_time: schedule.startTime,
+      end_time: schedule.endTime,
+      location: schedule.location,
+      address: schedule.address,
+      max_seats: schedule.maxSeats,
+      available_seats: schedule.availableSeats,
+      price: schedule.price,
+      status: schedule.status,
+      max_participants: schedule.maxSeats,
+      registered_participants: schedule.maxSeats - schedule.availableSeats,
     }));
 
-    // Increment views
-    await db.query("UPDATE programs SET views = views + 1 WHERE id = ?", [
-      program.id,
-    ]);
+    // Transform instructors
+    const instructors = program.programInstructors.map((pi) => ({
+      id: pi.instructor.id,
+      name: pi.instructor.name,
+      slug: pi.instructor.slug,
+      level: pi.instructor.level,
+      bio: pi.instructor.bio,
+      expertise: pi.instructor.expertise
+        ? JSON.parse(pi.instructor.expertise as string)
+        : [],
+    }));
+
+    // Increment views using Prisma
+    await prisma.program.update({
+      where: { id: program.id },
+      data: {
+        views: {
+          increment: 1,
+        },
+      },
+    });
 
     // Build response
+    // Note: Some fields referenced in the original code may not exist in the current schema
+    // (e.g., excerpt, featured_image, learning_objectives, target_participants, max_participants, certification_type)
+    // These are handled with fallbacks or omitted if not available in the schema
     const response = {
       id: program.id,
       title: program.title,
       slug: program.slug,
       description: program.description || program.content || "",
-      excerpt: program.excerpt || "",
-      featured_image: program.featured_image,
-      learning_objectives: program.learning_objectives || "",
-      target_participants: program.target_participants || "",
+      excerpt: "", // Note: Field not in current Prisma schema
+      featured_image: program.image, // Using 'image' field from schema
+      learning_objectives: "", // Note: Field not in current Prisma schema
+      target_participants: "", // Note: Field not in current Prisma schema
       requirements: program.requirements || "",
       price: program.price,
       duration: program.duration,
-      max_participants: program.max_participants || 20,
-      certification_type: program.certification_type,
-      category_id: program.category_id,
+      max_participants: 20, // Note: Field not in current Prisma schema, using default
+      certification_type: program.certificate, // Using 'certificate' field from schema
+      category_id: program.categoryId,
       status: program.status,
-      views: program.views,
-      meta_title: program.meta_title,
-      meta_description: program.meta_description,
-      created_at: program.created_at,
-      updated_at: program.updated_at,
-      category: program.category_id
+      views: program.views + 1, // Return incremented value
+      meta_title: program.metaTitle,
+      meta_description: program.metaDescription,
+      created_at: program.createdAt,
+      updated_at: program.updatedAt,
+      category: program.category
         ? {
-            name: program.category_name,
-            slug: program.category_slug,
+            name: program.category.name,
+            slug: program.category.slug,
           }
         : null,
-      instructors: instructors.map((i) => ({
-        ...i,
-        expertise: i.expertise ? JSON.parse(i.expertise) : [],
-      })),
+      instructors,
       schedules: schedulesWithSeats,
     };
 

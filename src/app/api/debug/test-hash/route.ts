@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -19,20 +19,25 @@ export async function POST(request: NextRequest) {
     const { email, password } = body;
 
     // Get user from database
-    const users = await db.query<any[]>(
-      "SELECT id, name, email, password, role, status FROM users WHERE email = ? LIMIT 1",
-      [email]
-    );
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        password: true,
+        role: true,
+        status: true,
+      },
+    });
 
-    if (users.length === 0) {
+    if (!user) {
       return NextResponse.json({
         success: false,
         message: "User tidak ditemukan",
         email: email,
       });
     }
-
-    const user = users[0];
 
     // Generate new hash untuk comparison
     const newHash = await bcrypt.hash(password, 10);

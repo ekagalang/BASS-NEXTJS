@@ -1,17 +1,35 @@
 // ============================================
 // PROGRAM REPOSITORY
 // Database operations untuk programs
+// Using Prisma ORM
 // ============================================
 
-import {
-  BaseRepository,
-  PaginatedResult,
-  PaginationOptions,
-} from "./base.repository";
-import { db } from "@/lib/db";
-import type { Program, ProgramWithRelations } from "@/types/database";
+import { prisma } from "@/lib/prisma";
+import type {
+  Program,
+  ProgramCategory,
+  Instructor,
+  Prisma,
+} from "@prisma/client";
 
-interface ProgramFilters {
+export interface PaginationOptions {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface ProgramFilters {
   category_id?: number;
   instructor_id?: number;
   status?: string;
@@ -20,11 +38,12 @@ interface ProgramFilters {
   max_price?: number;
 }
 
-class ProgramRepository extends BaseRepository<Program> {
-  constructor() {
-    super("programs");
-  }
+export type ProgramWithRelations = Program & {
+  category?: ProgramCategory | null;
+  instructor?: Instructor | null;
+};
 
+class ProgramRepository {
   /**
    * Find all programs with filters and pagination
    */
@@ -35,154 +54,78 @@ class ProgramRepository extends BaseRepository<Program> {
     const {
       page = 1,
       limit = 10,
-      sortBy = "created_at",
+      sortBy = "createdAt",
       sortOrder = "desc",
     } = options;
-    const offset = (page - 1) * limit;
 
-    // Whitelist allowed sort columns untuk security
+    const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where: Prisma.ProgramWhereInput = {};
+
+    if (filters.category_id) {
+      where.categoryId = filters.category_id;
+    }
+
+    if (filters.instructor_id) {
+      where.instructorId = filters.instructor_id;
+    }
+
+    if (filters.status) {
+      where.status = filters.status as any;
+    }
+
+    if (filters.search) {
+      where.OR = [
+        { title: { contains: filters.search } },
+        { description: { contains: filters.search } },
+      ];
+    }
+
+    if (filters.min_price !== undefined) {
+      where.price = {
+        ...where.price,
+        gte: filters.min_price,
+      };
+    }
+
+    if (filters.max_price !== undefined) {
+      where.price = {
+        ...where.price,
+        lte: filters.max_price,
+      };
+    }
+
+    // Validate sortBy
     const allowedSortColumns = [
       "id",
       "title",
       "price",
-      "created_at",
-      "updated_at",
+      "createdAt",
+      "updatedAt",
       "views",
     ];
-    const safeOrderBy = allowedSortColumns.includes(sortBy)
+    const safeSortBy = allowedSortColumns.includes(sortBy)
       ? sortBy
-      : "created_at";
-    const safeOrderDirection = sortOrder === "asc" ? "ASC" : "DESC";
+      : "createdAt";
 
-    // Build WHERE clause
-    const whereClauses: string[] = [];
-    const params: any[] = [];
+    // Get total count
+    const total = await prisma.program.count({ where });
 
-    if (filters.category_id) {
-      whereClauses.push("p.category_id = ?");
-      params.push(filters.category_id);
-    }
-
-    if (filters.instructor_id) {
-      whereClauses.push("p.instructor_id = ?");
-      params.push(filters.instructor_id);
-    }
-
-    if (filters.status) {
-      whereClauses.push("p.status = ?");
-      params.push(filters.status);
-    }
-
-    if (filters.search) {
-      whereClauses.push("(p.title LIKE ? OR p.description LIKE ?)");
-      params.push(`%${filters.search}%`, `%${filters.search}%`);
-    }
-
-    if (filters.min_price !== undefined) {
-      whereClauses.push("p.price >= ?");
-      params.push(filters.min_price);
-    }
-
-    if (filters.max_price !== undefined) {
-      whereClauses.push("p.price <= ?");
-      params.push(filters.max_price);
-    }
-
-    const whereClause =
-      whereClauses.length > 0 ? "WHERE " + whereClauses.join(" AND ") : "";
-
-    // Count total
-    const countQuery = `
-      SELECT COUNT(*) as total 
-      FROM programs p 
-      ${whereClause}
-    `;
-    const countResult = await db.query<any[]>(
-      countQuery,
-      params.length > 0 ? params : undefined
-    );
-    const total = countResult[0].total;
-
-    // Get data with relations
-    // NOTE: ORDER BY tidak bisa pakai prepared statement parameter
-    const dataQuery = `
-      SELECT 
-        p.id,
-        p.title,
-        p.slug,
-        p.category_id,
-        p.description,
-        p.content,
-        p.image,
-        p.duration,
-        p.price,
-        p.instructor_id,
-        p.requirements,
-        p.benefits,
-        p.certificate,
-        p.status,
-        p.views,
-        p.meta_title,
-        p.meta_description,
-        p.created_at,
-        p.updated_at,
-        pc.name as category_name,
-        pc.slug as category_slug,
-        i.name as instructor_name,
-        i.slug as instructor_slug,
-        i.photo as instructor_photo
-      FROM programs p
-      LEFT JOIN program_categories pc ON p.category_id = pc.id
-      LEFT JOIN instructors i ON p.instructor_id = i.id
-      ${whereClause}
-      ORDER BY p.${safeOrderBy} ${safeOrderDirection}
-      LIMIT ? OFFSET ?
-    `;
-
-    const queryParams =
-      params.length > 0 ? [...params, limit, offset] : [limit, offset];
-    const data = await db.query<any[]>(dataQuery, queryParams);
-
-    // Transform data to include relations
-    const transformedData: ProgramWithRelations[] = data.map((row) => ({
-      id: row.id,
-      title: row.title,
-      slug: row.slug,
-      category_id: row.category_id,
-      description: row.description,
-      content: row.content,
-      image: row.image,
-      duration: row.duration,
-      price: parseFloat(row.price),
-      instructor_id: row.instructor_id,
-      requirements: row.requirements,
-      benefits: row.benefits ? JSON.parse(row.benefits) : null,
-      certificate: row.certificate,
-      status: row.status,
-      views: row.views,
-      meta_title: row.meta_title,
-      meta_description: row.meta_description,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      category: row.category_id
-        ? {
-            id: row.category_id,
-            name: row.category_name,
-            slug: row.category_slug,
-          }
-        : undefined,
-      instructor: row.instructor_id
-        ? {
-            id: row.instructor_id,
-            name: row.instructor_name,
-            slug: row.instructor_slug,
-            photo: row.instructor_photo,
-          }
-        : undefined,
-    }));
+    // Get data
+    const data = await prisma.program.findMany({
+      where,
+      include: {
+        category: true,
+        instructor: true,
+      },
+      orderBy: { [safeSortBy]: sortOrder },
+      skip,
+      take: limit,
+    });
 
     return {
-      data: transformedData,
+      data,
       pagination: {
         page,
         limit,
@@ -196,124 +139,161 @@ class ProgramRepository extends BaseRepository<Program> {
    * Find program by slug with relations
    */
   async findBySlug(slug: string): Promise<ProgramWithRelations | null> {
-    const query = `
-      SELECT 
-        p.*,
-        pc.name as category_name,
-        pc.slug as category_slug,
-        i.name as instructor_name,
-        i.slug as instructor_slug,
-        i.photo as instructor_photo,
-        i.bio as instructor_bio
-      FROM programs p
-      LEFT JOIN program_categories pc ON p.category_id = pc.id
-      LEFT JOIN instructors i ON p.instructor_id = i.id
-      WHERE p.slug = ?
-      LIMIT 1
-    `;
+    return await prisma.program.findUnique({
+      where: { slug },
+      include: {
+        category: true,
+        instructor: true,
+      },
+    });
+  }
 
-    const results = await db.query<any[]>(query, [slug]);
-
-    if (results.length === 0) return null;
-
-    const row = results[0];
-
-    return {
-      id: row.id,
-      title: row.title,
-      slug: row.slug,
-      category_id: row.category_id,
-      description: row.description,
-      content: row.content,
-      image: row.image,
-      duration: row.duration,
-      price: row.price,
-      instructor_id: row.instructor_id,
-      requirements: row.requirements,
-      benefits: row.benefits ? JSON.parse(row.benefits) : null,
-      certificate: row.certificate,
-      status: row.status,
-      views: row.views,
-      meta_title: row.meta_title,
-      meta_description: row.meta_description,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      category: row.category_id
-        ? {
-            id: row.category_id,
-            name: row.category_name,
-            slug: row.category_slug,
-          }
-        : undefined,
-      instructor: row.instructor_id
-        ? {
-            id: row.instructor_id,
-            name: row.instructor_name,
-            slug: row.instructor_slug,
-            photo: row.instructor_photo,
-            bio: row.instructor_bio,
-          }
-        : undefined,
-    };
+  /**
+   * Find program by ID with relations
+   */
+  async findById(id: number): Promise<ProgramWithRelations | null> {
+    return await prisma.program.findUnique({
+      where: { id },
+      include: {
+        category: true,
+        instructor: true,
+      },
+    });
   }
 
   /**
    * Increment view count
    */
   async incrementViews(id: number): Promise<void> {
-    await db.query("UPDATE programs SET views = views + 1 WHERE id = ?", [id]);
+    await prisma.program.update({
+      where: { id },
+      data: {
+        views: {
+          increment: 1,
+        },
+      },
+    });
   }
 
   /**
    * Get featured programs
    */
   async getFeatured(limit: number = 6): Promise<ProgramWithRelations[]> {
-    const query = `
-      SELECT 
-        p.*,
-        pc.name as category_name,
-        i.name as instructor_name
-      FROM programs p
-      LEFT JOIN program_categories pc ON p.category_id = pc.id
-      LEFT JOIN instructors i ON p.instructor_id = i.id
-      WHERE p.status = 'published'
-      ORDER BY p.views DESC, p.created_at DESC
-      LIMIT ?
-    `;
+    return await prisma.program.findMany({
+      where: {
+        status: "published",
+      },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        instructor: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            photo: true,
+            bio: true,
+            expertise: true,
+            experience: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+      orderBy: [{ views: "desc" }, { createdAt: "desc" }],
+      take: limit,
+    });
+  }
 
-    const results = await db.query<any[]>(query, [limit]);
+  /**
+   * Create new program
+   */
+  async create(data: Prisma.ProgramCreateInput): Promise<Program> {
+    return await prisma.program.create({
+      data,
+    });
+  }
 
-    return results.map((row) => ({
-      id: row.id,
-      title: row.title,
-      slug: row.slug,
-      category_id: row.category_id,
-      description: row.description,
-      content: row.content,
-      image: row.image,
-      duration: row.duration,
-      price: row.price,
-      instructor_id: row.instructor_id,
-      requirements: row.requirements,
-      benefits: row.benefits ? JSON.parse(row.benefits) : null,
-      certificate: row.certificate,
-      status: row.status,
-      views: row.views,
-      meta_title: row.meta_title,
-      meta_description: row.meta_description,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      category: row.category_id
-        ? {
-            name: row.category_name,
-          }
-        : undefined,
-      instructor: row.instructor_id
-        ? {
-            name: row.instructor_name,
-          }
-        : undefined,
-    }));
+  /**
+   * Update program
+   */
+  async update(id: number, data: Prisma.ProgramUpdateInput): Promise<Program> {
+    return await prisma.program.update({
+      where: { id },
+      data,
+    });
+  }
+
+  /**
+   * Delete program
+   */
+  async delete(id: number): Promise<Program> {
+    return await prisma.program.delete({
+      where: { id },
+    });
+  }
+
+  /**
+   * Count programs by status
+   */
+  async countByStatus(status: string): Promise<number> {
+    return await prisma.program.count({
+      where: { status: status as any },
+    });
+  }
+
+  /**
+   * Get programs by category
+   */
+  async getByCategory(
+    categoryId: number,
+    limit: number = 10
+  ): Promise<ProgramWithRelations[]> {
+    return await prisma.program.findMany({
+      where: {
+        categoryId,
+        status: "published",
+      },
+      include: {
+        category: true,
+        instructor: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+    });
+  }
+
+  /**
+   * Get programs by instructor
+   */
+  async getByInstructor(
+    instructorId: number,
+    limit: number = 10
+  ): Promise<ProgramWithRelations[]> {
+    return await prisma.program.findMany({
+      where: {
+        instructorId,
+        status: "published",
+      },
+      include: {
+        category: true,
+        instructor: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+    });
   }
 }
 

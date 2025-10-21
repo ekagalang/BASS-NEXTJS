@@ -1,6 +1,7 @@
 // src/app/api/programs/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,78 +12,77 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "9");
     const category_id = searchParams.get("category_id");
     const search = searchParams.get("search");
-    const sortBy = searchParams.get("sortBy") || "created_at";
+    const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
-    const offset = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
     // Build WHERE clause
-    const whereClauses: string[] = ["p.status = ?"];
-    const params: any[] = ["published"]; // ← Changed from 'active' to 'published'
+    const where: Prisma.ProgramWhereInput = {
+      status: "published",
+    };
 
     if (category_id) {
-      whereClauses.push("p.category_id = ?");
-      params.push(parseInt(category_id));
+      where.categoryId = parseInt(category_id);
     }
 
     if (search) {
-      whereClauses.push("(p.title LIKE ? OR p.description LIKE ?)");
-      params.push(`%${search}%`, `%${search}%`);
+      where.OR = [
+        { title: { contains: search } },
+        { description: { contains: search } },
+      ];
     }
 
-    const whereClause = whereClauses.join(" AND ");
-
-    // Whitelist allowed sort columns
-    const allowedSortColumns = ["id", "title", "price", "created_at", "views"];
+    // Whitelist allowed sort columns (camelCase)
+    const allowedSortColumns = ["id", "title", "price", "createdAt", "views"];
     const safeOrderBy = allowedSortColumns.includes(sortBy)
       ? sortBy
-      : "created_at";
-    const safeOrderDirection = sortOrder === "asc" ? "ASC" : "DESC";
+      : "createdAt";
+    const safeOrderDirection = sortOrder === "asc" ? "asc" : "desc";
 
     // Count total
-    const countQuery = `
-      SELECT COUNT(*) as total 
-      FROM programs p 
-      WHERE ${whereClause}
-    `;
-    const countResult = await db.query<any[]>(countQuery, params);
-    const total = countResult[0]?.total || 0;
+    const total = await prisma.program.count({
+      where,
+    });
 
     // Fetch programs with category
-    const query = `
-      SELECT 
-        p.*,
-        pc.name as category_name,
-        pc.slug as category_slug
-      FROM programs p
-      LEFT JOIN program_categories pc ON p.category_id = pc.id
-      WHERE ${whereClause}
-      ORDER BY p.${safeOrderBy} ${safeOrderDirection}
-      LIMIT ? OFFSET ?
-    `;
-
-    const programs = await db.query<any[]>(query, [...params, limit, offset]);
+    const programs = await prisma.program.findMany({
+      where,
+      include: {
+        category: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      orderBy: {
+        [safeOrderBy]: safeOrderDirection,
+      },
+      skip,
+      take: limit,
+    });
 
     // Transform data
-    const transformedData = programs.map((row) => ({
-      id: row.id,
-      title: row.title,
-      slug: row.slug,
-      description: row.description,
-      excerpt: row.excerpt,
-      featured_image: row.featured_image,
-      price: row.price,
-      duration: row.duration,
-      max_participants: row.max_participants,
-      certification_type: row.certification_type,
-      category_id: row.category_id,
-      status: row.status,
-      views: row.views,
-      created_at: row.created_at,
-      category: row.category_id
+    const transformedData = programs.map((program) => ({
+      id: program.id,
+      title: program.title,
+      slug: program.slug,
+      description: program.description,
+      excerpt: program.excerpt,
+      featured_image: program.featuredImage,
+      price: program.price,
+      duration: program.duration,
+      max_participants: program.maxParticipants,
+      certification_type: program.certificationType,
+      category_id: program.categoryId,
+      status: program.status,
+      views: program.views,
+      created_at: program.createdAt,
+      category: program.category
         ? {
-            name: row.category_name,
-            slug: row.category_slug,
+            name: program.category.name,
+            slug: program.category.slug,
           }
         : null,
     }));
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error: any) {
-    console.error("❌ Error fetching programs:", error);
+    console.error("Error fetching programs:", error);
     return NextResponse.json(
       {
         error: "Failed to fetch programs",

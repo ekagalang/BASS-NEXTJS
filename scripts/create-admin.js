@@ -1,19 +1,13 @@
 // scripts/create-admin.js
-const mysql = require("mysql2/promise");
+// Migrated to use Prisma ORM
+const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
+
+const prisma = new PrismaClient();
 
 async function createAdmin() {
   try {
-    // Database connection
-    const connection = await mysql.createConnection({
-      host: "localhost",
-      port: 3306,
-      user: "root",
-      password: "Samphistik@7", // <-- GANTI INI!
-      database: "bass_training",
-    });
-
-    console.log("✅ Connected to database");
+    console.log("✅ Connected to database via Prisma");
 
     // Password to hash
     const password = "admin123";
@@ -25,53 +19,63 @@ async function createAdmin() {
     console.log("Hash length:", hashedPassword.length);
 
     // Delete existing admin if exists
-    await connection.query(
-      "DELETE FROM users WHERE email = 'admin@basstrainingacademy.com'"
-    );
-    console.log("\n🗑️  Deleted old admin user (if exists)");
+    const deleted = await prisma.user.deleteMany({
+      where: { email: "admin@basstrainingacademy.com" },
+    });
+    console.log("\n🗑️  Deleted old admin user (if exists):", deleted.count);
 
-    // Insert new admin user
-    const [result] = await connection.query(
-      `INSERT INTO users (name, email, password, role, phone, status, created_at, updated_at) 
-       VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [
-        "Admin BASS",
-        "admin@basstrainingacademy.com",
-        hashedPassword,
-        "admin",
-        "081234567890",
-        "active",
-      ]
-    );
+    // Create new admin user
+    const admin = await prisma.user.create({
+      data: {
+        name: "Admin BASS",
+        email: "admin@basstrainingacademy.com",
+        password: hashedPassword,
+        role: "admin",
+        phone: "081234567890",
+        status: "active",
+      },
+    });
 
     console.log("✅ New admin user created!");
-    console.log("Insert ID:", result.insertId);
+    console.log("User ID:", admin.id);
 
     // Verify the user
-    const [users] = await connection.query(
-      "SELECT id, name, email, role, status, LEFT(password, 20) as password_preview FROM users WHERE email = 'admin@basstrainingacademy.com'"
-    );
+    const createdUser = await prisma.user.findUnique({
+      where: { email: "admin@basstrainingacademy.com" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        status: true,
+        password: true,
+      },
+    });
 
     console.log("\n👤 User created:");
-    console.log(users[0]);
+    console.log({
+      id: createdUser.id,
+      name: createdUser.name,
+      email: createdUser.email,
+      role: createdUser.role,
+      status: createdUser.status,
+      password_preview: createdUser.password.substring(0, 20) + "...",
+    });
 
     // Test password comparison
-    const [fullUser] = await connection.query(
-      "SELECT password FROM users WHERE email = 'admin@basstrainingacademy.com'"
-    );
-
-    const isMatch = await bcrypt.compare(password, fullUser[0].password);
+    const isMatch = await bcrypt.compare(password, createdUser.password);
     console.log(
       "\n🔐 Password verification:",
       isMatch ? "✅ MATCH" : "❌ NO MATCH"
     );
 
-    await connection.end();
+    await prisma.$disconnect();
     console.log("\n✅ Done! You can now login with:");
     console.log("Email: admin@basstrainingacademy.com");
     console.log("Password: admin123");
   } catch (error) {
     console.error("❌ Error:", error.message);
+    await prisma.$disconnect();
     process.exit(1);
   }
 }

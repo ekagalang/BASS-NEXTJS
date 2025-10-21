@@ -1,0 +1,603 @@
+// ============================================
+// PRISMA SCHEMA: BASS Training Academy
+// Database-agnostic ORM configuration
+// Supports: MySQL, PostgreSQL, SQLite, SQL Server, MongoDB
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql" // Can be: mysql, postgresql, sqlite, sqlserver, mongodb
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USERS & AUTHENTICATION
+// ============================================
+
+model User {
+  id              Int       @id @default(autoincrement()) @db.UnsignedInt
+  name            String    @db.VarChar(255)
+  email           String    @unique @db.VarChar(255)
+  password        String    @db.VarChar(255)
+  role            UserRole  @default(user)
+  phone           String?   @db.VarChar(20)
+  avatar          String?   @db.VarChar(255)
+  status          UserStatus @default(active)
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamp(0)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relations
+  sessions        Session[]
+  posts           Post[]
+  media           Media[]
+  registrations   Registration[]
+  chatSessions    ChatSession[]
+  chatMessages    ChatMessage[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+model Session {
+  id          Int      @id @default(autoincrement()) @db.UnsignedInt
+  userId      Int      @map("user_id") @db.UnsignedInt
+  token       String   @unique @db.VarChar(500)
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  userAgent   String?  @map("user_agent") @db.VarChar(255)
+  expiresAt   DateTime @map("expires_at") @db.Timestamp(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ============================================
+// CONTENT MANAGEMENT - PROGRAMS
+// ============================================
+
+model ProgramCategory {
+  id           Int       @id @default(autoincrement()) @db.UnsignedInt
+  name         String    @db.VarChar(255)
+  slug         String    @unique @db.VarChar(255)
+  description  String?   @db.Text
+  parentId     Int?      @map("parent_id") @db.UnsignedInt
+  displayOrder Int       @default(0) @map("display_order")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relations
+  parent   ProgramCategory?  @relation("CategoryToCategory", fields: [parentId], references: [id], onDelete: SetNull)
+  children ProgramCategory[] @relation("CategoryToCategory")
+  programs Program[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@map("program_categories")
+}
+
+model Instructor {
+  id           Int              @id @default(autoincrement()) @db.UnsignedInt
+  name         String           @db.VarChar(255)
+  slug         String           @unique @db.VarChar(255)
+  level        InstructorLevel  @default(regular)
+  bio          String?          @db.Text
+  photo        String?          @db.VarChar(255)
+  expertise    String?          @db.Text // JSON array
+  email        String?          @db.VarChar(255)
+  phone        String?          @db.VarChar(20)
+  linkedin     String?          @db.VarChar(255)
+  status       InstructorStatus @default(active)
+  displayOrder Int              @default(0) @map("display_order")
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relations
+  programs           Program[]
+  programInstructors ProgramInstructor[]
+
+  @@index([slug])
+  @@index([level])
+  @@index([status])
+  @@map("instructors")
+}
+
+model Program {
+  id              Int             @id @default(autoincrement()) @db.UnsignedInt
+  title           String          @db.VarChar(255)
+  slug            String          @unique @db.VarChar(255)
+  categoryId      Int?            @map("category_id") @db.UnsignedInt
+  description     String?         @db.Text
+  content         String?         @db.LongText
+  image           String?         @db.VarChar(255)
+  duration        String?         @db.VarChar(100)
+  price           Decimal         @default(0.00) @db.Decimal(10, 2)
+  instructorId    Int?            @map("instructor_id") @db.UnsignedInt
+  requirements    String?         @db.Text
+  benefits        String?         @db.Text // JSON array
+  certificate     CertificateType @default(yes)
+  status          ProgramStatus   @default(draft)
+  views           Int             @default(0)
+  metaTitle       String?         @map("meta_title") @db.VarChar(255)
+  metaDescription String?         @map("meta_description") @db.Text
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relations
+  category           ProgramCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  instructor         Instructor?         @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+  schedules          Schedule[]
+  registrations      Registration[]
+  programInstructors ProgramInstructor[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([status])
+  @@index([instructorId])
+  @@fulltext([title, description])
+  @@map("programs")
+}
+
+model ProgramInstructor {
+  id           Int      @id @default(autoincrement()) @db.UnsignedInt
+  programId    Int      @map("program_id") @db.UnsignedInt
+  instructorId Int      @map("instructor_id") @db.UnsignedInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  // Relations
+  program    Program    @relation(fields: [programId], references: [id], onDelete: Cascade)
+  instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@unique([programId, instructorId], name: "unique_program_instructor")
+  @@index([programId])
+  @@index([instructorId])
+  @@map("program_instructors")
+}
+
+model Schedule {
+  id                 Int            @id @default(autoincrement()) @db.UnsignedInt
+  programId          Int            @map("program_id") @db.UnsignedInt
+  startDate          DateTime       @map("start_date") @db.Date
+  endDate            DateTime       @map("end_date") @db.Date
+  startTime          DateTime?      @map("start_time") @db.Time(0)
+  endTime            DateTime?      @map("end_time") @db.Time(0)
+  location           String?        @db.VarChar(255)
+  address            String?        @db.Text
+  maxSeats           Int            @default(0) @map("max_seats")
+  availableSeats     Int            @default(0) @map("available_seats")
+  price              Decimal?       @db.Decimal(10, 2)
+  earlyBirdPrice     Decimal?       @map("early_bird_price") @db.Decimal(10, 2)
+  earlyBirdDeadline  DateTime?      @map("early_bird_deadline") @db.Date
+  status             ScheduleStatus @default(upcoming)
+  notes              String?        @db.Text
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relations
+  program       Program        @relation(fields: [programId], references: [id], onDelete: Cascade)
+  registrations Registration[]
+
+  @@index([programId])
+  @@index([startDate])
+  @@index([status])
+  @@map("schedules")
+}
+
+model Registration {
+  id               Int                @id @default(autoincrement()) @db.UnsignedInt
+  userId           Int                @map("user_id") @db.UnsignedInt
+  programId        Int                @map("program_id") @db.UnsignedInt
+  scheduleId       Int                @map("schedule_id") @db.UnsignedInt
+  participantName  String             @map("participant_name") @db.VarChar(255)
+  participantEmail String             @map("participant_email") @db.VarChar(255)
+  participantPhone String             @map("participant_phone") @db.VarChar(20)
+  company          String?            @db.VarChar(255)
+  position         String?            @db.VarChar(255)
+  status           RegistrationStatus @default(pending)
+  paymentStatus    PaymentStatus      @default(unpaid) @map("payment_status")
+  paymentMethod    String?            @map("payment_method") @db.VarChar(50)
+  paymentProof     String?            @map("payment_proof") @db.VarChar(255)
+  totalAmount      Decimal            @default(0.00) @map("total_amount") @db.Decimal(10, 2)
+  notes            String?            @db.Text
+  registeredAt     DateTime           @default(now()) @map("registered_at") @db.Timestamp(0)
+  confirmedAt      DateTime?          @map("confirmed_at") @db.Timestamp(0)
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program  Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([programId])
+  @@index([scheduleId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@map("registrations")
+}
+
+// ============================================
+// CONTENT MANAGEMENT - PAGES & POSTS
+// ============================================
+
+model Page {
+  id              Int        @id @default(autoincrement()) @db.UnsignedInt
+  title           String     @db.VarChar(255)
+  slug            String     @unique @db.VarChar(255)
+  content         String?    @db.LongText
+  template        String     @default("default") @db.VarChar(50)
+  parentId        Int?       @map("parent_id") @db.UnsignedInt
+  displayOrder    Int        @default(0) @map("display_order")
+  showInMenu      ShowInMenu @default(yes) @map("show_in_menu")
+  status          PageStatus @default(draft)
+  metaTitle       String?    @map("meta_title") @db.VarChar(255)
+  metaDescription String?    @map("meta_description") @db.Text
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relations
+  parent   Page?  @relation("PageToPage", fields: [parentId], references: [id], onDelete: SetNull)
+  children Page[] @relation("PageToPage")
+
+  @@index([slug])
+  @@index([status])
+  @@index([parentId])
+  @@map("pages")
+}
+
+model PostCategory {
+  id          Int      @id @default(autoincrement()) @db.UnsignedInt
+  name        String   @db.VarChar(255)
+  slug        String   @unique @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relations
+  posts Post[]
+
+  @@index([slug])
+  @@map("post_categories")
+}
+
+model Post {
+  id              Int        @id @default(autoincrement()) @db.UnsignedInt
+  title           String     @db.VarChar(255)
+  slug            String     @unique @db.VarChar(255)
+  content         String?    @db.LongText
+  excerpt         String?    @db.Text
+  featuredImage   String?    @map("featured_image") @db.VarChar(255)
+  categoryId      Int?       @map("category_id") @db.UnsignedInt
+  authorId        Int        @map("author_id") @db.UnsignedInt
+  status          PostStatus @default(draft)
+  views           Int        @default(0)
+  publishedAt     DateTime?  @map("published_at") @db.Timestamp(0)
+  metaTitle       String?    @map("meta_title") @db.VarChar(255)
+  metaDescription String?    @map("meta_description") @db.Text
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  // Relations
+  category PostCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  author   User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([status])
+  @@index([publishedAt])
+  @@fulltext([title, excerpt, content])
+  @@map("posts")
+}
+
+// ============================================
+// MEDIA MANAGEMENT
+// ============================================
+
+model Media {
+  id           Int      @id @default(autoincrement()) @db.UnsignedInt
+  filename     String   @db.VarChar(255)
+  originalName String   @map("original_name") @db.VarChar(255)
+  path         String   @db.VarChar(500)
+  url          String   @db.VarChar(500)
+  mimeType     String   @map("mime_type") @db.VarChar(100)
+  size         Int      @db.UnsignedInt
+  width        Int?     @db.UnsignedInt
+  height       Int?     @db.UnsignedInt
+  altText      String?  @map("alt_text") @db.VarChar(255)
+  title        String?  @db.VarChar(255)
+  description  String?  @db.Text
+  uploadedBy   Int      @map("uploaded_by") @db.UnsignedInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+
+  // Relations
+  uploader User @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([mimeType])
+  @@index([uploadedBy])
+  @@map("media")
+}
+
+model Gallery {
+  id           Int           @id @default(autoincrement()) @db.UnsignedInt
+  title        String        @db.VarChar(255)
+  slug         String        @unique @db.VarChar(255)
+  description  String?       @db.Text
+  images       Json?         // JSON array of media IDs
+  coverImage   String?       @map("cover_image") @db.VarChar(255)
+  status       GalleryStatus @default(draft)
+  displayOrder Int           @default(0) @map("display_order")
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@index([slug])
+  @@index([status])
+  @@map("galleries")
+}
+
+// ============================================
+// CONTACT & COMMUNICATION
+// ============================================
+
+model Contact {
+  id         Int           @id @default(autoincrement()) @db.UnsignedInt
+  name       String        @db.VarChar(255)
+  email      String        @db.VarChar(255)
+  phone      String?       @db.VarChar(20)
+  subject    String?       @db.VarChar(255)
+  message    String        @db.Text
+  status     ContactStatus @default(unread)
+  ipAddress  String?       @map("ip_address") @db.VarChar(45)
+  userAgent  String?       @map("user_agent") @db.VarChar(255)
+  readAt     DateTime?     @map("read_at") @db.Timestamp(0)
+  repliedAt  DateTime?     @map("replied_at") @db.Timestamp(0)
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamp(0)
+
+  @@index([status])
+  @@index([email])
+  @@index([createdAt])
+  @@map("contacts")
+}
+
+model NewsletterSubscriber {
+  id             Int                      @id @default(autoincrement()) @db.UnsignedInt
+  email          String                   @unique @db.VarChar(255)
+  name           String?                  @db.VarChar(255)
+  status         NewsletterSubscriberStatus @default(active)
+  token          String?                  @unique @db.VarChar(100)
+  subscribedAt   DateTime                 @default(now()) @map("subscribed_at") @db.Timestamp(0)
+  unsubscribedAt DateTime?                @map("unsubscribed_at") @db.Timestamp(0)
+
+  @@index([email])
+  @@index([status])
+  @@map("newsletter_subscribers")
+}
+
+// ============================================
+// CHAT SYSTEM
+// ============================================
+
+model ChatSession {
+  id           Int               @id @default(autoincrement()) @db.UnsignedInt
+  visitorId    String            @map("visitor_id") @db.VarChar(100)
+  visitorName  String?           @map("visitor_name") @db.VarChar(255)
+  visitorEmail String?           @map("visitor_email") @db.VarChar(255)
+  visitorPhone String?           @map("visitor_phone") @db.VarChar(20)
+  adminId      Int?              @map("admin_id") @db.UnsignedInt
+  status       ChatSessionStatus @default(waiting)
+  startedAt    DateTime          @default(now()) @map("started_at") @db.Timestamp(0)
+  endedAt      DateTime?         @map("ended_at") @db.Timestamp(0)
+
+  // Relations
+  admin    User?         @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  messages ChatMessage[]
+
+  @@index([visitorId])
+  @@index([adminId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id         Int            @id @default(autoincrement()) @db.UnsignedInt
+  sessionId  Int            @map("session_id") @db.UnsignedInt
+  senderType SenderType     @map("sender_type")
+  senderId   Int?           @map("sender_id") @db.UnsignedInt
+  message    String         @db.Text
+  isRead     Boolean        @default(false) @map("is_read")
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+
+  // Relations
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender  User?       @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId])
+  @@index([senderType])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+model ChatBotRule {
+  id             Int      @id @default(autoincrement()) @db.UnsignedInt
+  triggerKeyword String   @map("trigger_keyword") @db.VarChar(255)
+  responseText   String   @map("response_text") @db.Text
+  priority       Int      @default(0)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@index([triggerKeyword])
+  @@index([isActive])
+  @@index([priority])
+  @@map("chat_bot_rules")
+}
+
+// ============================================
+// SETTINGS & CONFIGURATION
+// ============================================
+
+model Setting {
+  id          Int         @id @default(autoincrement()) @db.UnsignedInt
+  key         String      @unique @db.VarChar(255)
+  value       String?     @db.Text
+  type        SettingType @default(text)
+  group       String      @default("general") @db.VarChar(100)
+  description String?     @db.Text
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  @@index([key])
+  @@index([group])
+  @@map("settings")
+}
+
+// ============================================
+// ANALYTICS & LOGS
+// ============================================
+
+model PageView {
+  id        BigInt       @id @default(autoincrement()) @db.UnsignedBigInt
+  pageType  PageViewType @map("page_type")
+  pageId    Int?         @map("page_id") @db.UnsignedInt
+  ipAddress String?      @map("ip_address") @db.VarChar(45)
+  userAgent String?      @map("user_agent") @db.VarChar(255)
+  referer   String?      @db.VarChar(500)
+  viewedAt  DateTime     @default(now()) @map("viewed_at") @db.Timestamp(0)
+
+  @@index([pageType, pageId])
+  @@index([viewedAt])
+  @@map("page_views")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  admin
+  instructor
+  user
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+}
+
+enum InstructorLevel {
+  junior
+  regular
+  senior
+  master
+}
+
+enum InstructorStatus {
+  active
+  inactive
+}
+
+enum CertificateType {
+  yes
+  no
+}
+
+enum ProgramStatus {
+  draft
+  published
+  archived
+}
+
+enum ScheduleStatus {
+  upcoming
+  ongoing
+  completed
+  cancelled
+}
+
+enum RegistrationStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+}
+
+enum PaymentStatus {
+  unpaid
+  pending
+  paid
+  refunded
+}
+
+enum PageStatus {
+  draft
+  published
+}
+
+enum ShowInMenu {
+  yes
+  no
+}
+
+enum PostStatus {
+  draft
+  published
+  archived
+}
+
+enum GalleryStatus {
+  draft
+  published
+}
+
+enum ContactStatus {
+  unread
+  read
+  replied
+  archived
+}
+
+enum NewsletterSubscriberStatus {
+  active
+  unsubscribed
+  bounced
+}
+
+enum ChatSessionStatus {
+  waiting
+  active
+  ended
+  abandoned
+}
+
+enum SenderType {
+  visitor
+  admin
+  bot
+}
+
+enum SettingType {
+  text
+  number
+  boolean
+  json
+}
+
+enum PageViewType {
+  program
+  post
+  page
+  other
+}

@@ -25,8 +25,9 @@ async function getPrograms(searchParams: any) {
   if (searchParams.page) params.append("page", searchParams.page);
   if (searchParams.sort) params.append("sortBy", searchParams.sort);
 
-  // FIX: Remove /api prefix since we're calling from server side
-  const url = `http://localhost:3000/api/programs?${params.toString()}`;
+  // Use environment variable or current host
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const url = `${baseUrl}/api/programs?${params.toString()}`;
 
   try {
     const res = await fetch(url, {
@@ -52,7 +53,8 @@ async function getPrograms(searchParams: any) {
 // Fungsi untuk fetch categories
 async function getCategories() {
   try {
-    const res = await fetch("http://localhost:3000/api/program-categories", {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/program-categories`, {
       cache: "force-cache",
     });
 

@@ -4,7 +4,7 @@
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -16,43 +16,35 @@ export async function GET(request: NextRequest) {
   try {
     // Test 1: Basic connection
     console.log("🔍 Testing database connection...");
-    const isConnected = await db.testConnection();
+    await prisma.$queryRaw`SELECT 1`;
 
-    if (!isConnected) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Failed to connect to database",
-          error: "Connection test failed",
-        },
-        { status: 500 }
-      );
-    }
+    // Test 2: Get users count
+    const totalUsers = await prisma.user.count();
 
-    // Test 2: Query test - Get tables
-    console.log("🔍 Testing database query...");
-    const tables = await db.query<any[]>("SHOW TABLES");
+    // Test 3: Get programs count
+    const totalPrograms = await prisma.program.count();
 
-    // Test 3: Query test - Get users count
-    const usersResult = await db.query<any[]>(
-      "SELECT COUNT(*) as total FROM users"
-    );
-    const totalUsers = usersResult[0]?.total || 0;
+    // Test 4: Get sample users
+    const sampleUsers = await prisma.user.findMany({
+      take: 3,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+      },
+    });
 
-    // Test 4: Query test - Get programs count
-    const programsResult = await db.query<any[]>(
-      "SELECT COUNT(*) as total FROM programs"
-    );
-    const totalPrograms = programsResult[0]?.total || 0;
-
-    // Test 5: Query test - Get sample user
-    const sampleUsers = await db.query<any[]>(
-      "SELECT id, name, email, role FROM users LIMIT 3"
-    );
-
-    // Test 6: Get database info
-    const dbInfo = await db.query<any[]>("SELECT DATABASE() as db_name");
+    // Test 5: Get database info
+    const dbInfo = await prisma.$queryRaw<
+      Array<{ db_name: string }>
+    >`SELECT DATABASE() as db_name`;
     const databaseName = dbInfo[0]?.db_name;
+
+    // Test 6: Get table names
+    const tables = await prisma.$queryRaw<
+      Array<{ TABLE_NAME: string }>
+    >`SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE()`;
 
     return NextResponse.json({
       success: true,
@@ -61,7 +53,7 @@ export async function GET(request: NextRequest) {
         connected: true,
         database: databaseName,
         totalTables: tables.length,
-        tables: tables.map((t: any) => Object.values(t)[0]),
+        tables: tables.map((t) => t.TABLE_NAME),
         statistics: {
           users: totalUsers,
           programs: totalPrograms,

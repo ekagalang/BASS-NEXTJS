@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { newsletterSchema } from "@/lib/validations";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { generateRandomToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -36,15 +36,13 @@ export async function POST(request: NextRequest) {
     const { email, name } = validation.data;
 
     // Check if email already exists
-    const existing = await db.query<any[]>(
-      "SELECT id, status FROM newsletter_subscribers WHERE email = ? LIMIT 1",
-      [email]
-    );
+    const existing = await prisma.newsletterSubscriber.findUnique({
+      where: { email },
+      select: { id: true, status: true },
+    });
 
-    if (existing.length > 0) {
-      const subscriber = existing[0];
-
-      if (subscriber.status === "active") {
+    if (existing) {
+      if (existing.status === "active") {
         return NextResponse.json(
           {
             success: false,
@@ -55,10 +53,13 @@ export async function POST(request: NextRequest) {
       }
 
       // Reactivate if unsubscribed
-      await db.query(
-        "UPDATE newsletter_subscribers SET status = ?, subscribed_at = NOW() WHERE id = ?",
-        ["active", subscriber.id]
-      );
+      await prisma.newsletterSubscriber.update({
+        where: { id: existing.id },
+        data: {
+          status: "active",
+          subscribedAt: new Date(),
+        },
+      });
 
       return NextResponse.json({
         success: true,
@@ -70,11 +71,15 @@ export async function POST(request: NextRequest) {
     const token = generateRandomToken(32);
 
     // Insert new subscriber
-    await db.query(
-      `INSERT INTO newsletter_subscribers (email, name, status, token, subscribed_at)
-       VALUES (?, ?, 'active', ?, NOW())`,
-      [email, name || null, token]
-    );
+    await prisma.newsletterSubscriber.create({
+      data: {
+        email,
+        name: name || null,
+        status: "active",
+        token,
+        subscribedAt: new Date(),
+      },
+    });
 
     // TODO: Send welcome email (optional)
     // await sendWelcomeEmail({ email, name, token });

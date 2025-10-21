@@ -1,12 +1,13 @@
 // ============================================
 // AUTHENTICATION UTILITIES
 // JWT, Password hashing, Session management
+// Using Prisma ORM
 // ============================================
 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { db } from "@/lib/db";
-import type { User } from "@/types/database";
+import { prisma } from "@/lib/prisma";
+import type { User } from "@prisma/client";
 
 // JWT Configuration
 const JWT_SECRET =
@@ -119,11 +120,13 @@ export async function createSession(
   const days = parseInt(expiresIn.replace("d", ""));
   expiresAt.setDate(expiresAt.getDate() + days);
 
-  await db.query(
-    `INSERT INTO sessions (user_id, token, expires_at) 
-     VALUES (?, ?, ?)`,
-    [userId, token, expiresAt]
-  );
+  await prisma.session.create({
+    data: {
+      userId,
+      token,
+      expiresAt,
+    },
+  });
 }
 
 /**
@@ -132,14 +135,14 @@ export async function createSession(
  * @returns Session data or null
  */
 export async function getSession(token: string): Promise<any | null> {
-  const sessions = await db.query<any[]>(
-    `SELECT * FROM sessions 
-     WHERE token = ? AND expires_at > NOW()
-     LIMIT 1`,
-    [token]
-  );
-
-  return sessions.length > 0 ? sessions[0] : null;
+  return await prisma.session.findFirst({
+    where: {
+      token,
+      expiresAt: {
+        gt: new Date(),
+      },
+    },
+  });
 }
 
 /**
@@ -147,7 +150,9 @@ export async function getSession(token: string): Promise<any | null> {
  * @param token JWT token
  */
 export async function deleteSession(token: string): Promise<void> {
-  await db.query("DELETE FROM sessions WHERE token = ?", [token]);
+  await prisma.session.deleteMany({
+    where: { token },
+  });
 }
 
 /**
@@ -155,14 +160,22 @@ export async function deleteSession(token: string): Promise<void> {
  * @param userId User ID
  */
 export async function deleteUserSessions(userId: number): Promise<void> {
-  await db.query("DELETE FROM sessions WHERE user_id = ?", [userId]);
+  await prisma.session.deleteMany({
+    where: { userId },
+  });
 }
 
 /**
  * Clean expired sessions
  */
 export async function cleanExpiredSessions(): Promise<void> {
-  await db.query("DELETE FROM sessions WHERE expires_at < NOW()");
+  await prisma.session.deleteMany({
+    where: {
+      expiresAt: {
+        lt: new Date(),
+      },
+    },
+  });
 }
 
 // ============================================
@@ -175,12 +188,9 @@ export async function cleanExpiredSessions(): Promise<void> {
  * @returns User data or null
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const users = await db.query<User[]>(
-    "SELECT * FROM users WHERE email = ? LIMIT 1",
-    [email]
-  );
-
-  return users.length > 0 ? users[0] : null;
+  return await prisma.user.findUnique({
+    where: { email },
+  });
 }
 
 /**
@@ -189,12 +199,9 @@ export async function getUserByEmail(email: string): Promise<User | null> {
  * @returns User data or null
  */
 export async function getUserById(userId: number): Promise<User | null> {
-  const users = await db.query<User[]>(
-    "SELECT * FROM users WHERE id = ? LIMIT 1",
-    [userId]
-  );
-
-  return users.length > 0 ? users[0] : null;
+  return await prisma.user.findUnique({
+    where: { id: userId },
+  });
 }
 
 /**

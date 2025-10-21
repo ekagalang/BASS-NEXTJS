@@ -6,11 +6,24 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:pull": "prisma db pull",
+    "db:studio": "prisma studio",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:prod": "prisma migrate deploy",
+    "db:seed": "node prisma/seed.js",
+    "db:reset": "prisma db push --force-reset && node prisma/seed.js",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@material-tailwind/react": "^2.1.10",
+    "@prisma/client": "^6.17.1",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -20,6 +33,7 @@
     "lucide-react": "^0.544.0",
     "mysql2": "^3.15.1",
     "next": "15.5.4",
+    "prisma": "^6.17.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.64.0",

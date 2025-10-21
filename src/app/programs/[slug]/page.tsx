@@ -56,7 +56,8 @@ export async function generateMetadata({
 // Fetch single program
 async function getProgram(slug: string) {
   try {
-    const res = await fetch(`http://localhost:3000/api/programs/${slug}`, {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const res = await fetch(`${baseUrl}/api/programs/${slug}`, {
       cache: "no-store",
     });
 
@@ -74,8 +75,9 @@ async function getProgram(slug: string) {
 // Fetch related programs
 async function getRelatedPrograms(categoryId: number, currentId: number) {
   try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const res = await fetch(
-      `http://localhost:3000/api/programs?category_id=${categoryId}&limit=3`,
+      `${baseUrl}/api/programs?category_id=${categoryId}&limit=3`,
       { cache: "no-store" }
     );
 

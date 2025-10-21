@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
@@ -8,35 +8,35 @@ export async function GET(
   try {
     const { slug } = await params;
 
-    const query = `
-      SELECT 
-        id,
-        title,
-        slug,
-        content,
-        template,
-        meta_title,
-        meta_description,
-        created_at,
-        updated_at
-      FROM pages
-      WHERE slug = ? AND status = 'published'
-      LIMIT 1
-    `;
+    const page = await prisma.page.findUnique({
+      where: {
+        slug: slug,
+        status: "published",
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        content: true,
+        template: true,
+        metaTitle: true,
+        metaDescription: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
-    const results = await db.query<any[]>(query, [slug]);
-
-    if (results.length === 0) {
+    if (!page) {
       return NextResponse.json({ error: "Page not found" }, { status: 404 });
     }
 
-    return NextResponse.json(results[0], {
+    return NextResponse.json(page, {
       headers: {
         "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
       },
     });
   } catch (error: any) {
-    console.error("❌ Error fetching page:", error);
+    console.error("Error fetching page:", error);
     return NextResponse.json(
       {
         error: "Failed to fetch page",

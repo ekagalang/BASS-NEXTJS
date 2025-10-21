@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://basstrainingacademy.com";
@@ -40,45 +40,45 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     // Fetch all active programs
-    const programs = await db.query<any[]>(
-      `SELECT slug, updated_at 
-       FROM programs 
-       WHERE status = 'active' 
-       ORDER BY updated_at DESC`
-    );
+    const programs = await prisma.program.findMany({
+      where: { status: "active" },
+      select: { slug: true, updatedAt: true },
+      orderBy: { updatedAt: "desc" },
+    });
 
     const programPages: MetadataRoute.Sitemap = programs.map((program) => ({
       url: `${baseUrl}/programs/${program.slug}`,
-      lastModified: new Date(program.updated_at),
+      lastModified: new Date(program.updatedAt),
       changeFrequency: "weekly",
       priority: 0.8,
     }));
 
     // Fetch all published posts
-    const posts = await db.query<any[]>(
-      `SELECT slug, updated_at 
-       FROM posts 
-       WHERE status = 'published' AND published_at <= NOW()
-       ORDER BY published_at DESC`
-    );
+    const posts = await prisma.post.findMany({
+      where: {
+        status: "published",
+        publishedAt: { lte: new Date() },
+      },
+      select: { slug: true, updatedAt: true },
+      orderBy: { publishedAt: "desc" },
+    });
 
     const blogPages: MetadataRoute.Sitemap = posts.map((post) => ({
       url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: new Date(post.updated_at),
+      lastModified: new Date(post.updatedAt),
       changeFrequency: "monthly",
       priority: 0.6,
     }));
 
     // Fetch all pages
-    const pages = await db.query<any[]>(
-      `SELECT slug, updated_at 
-       FROM pages 
-       WHERE status = 'published'`
-    );
+    const pages = await prisma.page.findMany({
+      where: { status: "published" },
+      select: { slug: true, updatedAt: true },
+    });
 
     const customPages: MetadataRoute.Sitemap = pages.map((page) => ({
       url: `${baseUrl}/${page.slug}`,
-      lastModified: new Date(page.updated_at),
+      lastModified: new Date(page.updatedAt),
       changeFrequency: "monthly",
       priority: 0.6,
     }));

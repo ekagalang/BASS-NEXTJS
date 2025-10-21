@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
   try {
     // Fetch all program categories
-    const categories = await db.query<any[]>(
-      `SELECT id, name, slug, description, parent_id, display_order
-       FROM program_categories
-       ORDER BY display_order ASC, name ASC`
-    );
+    const categories = await prisma.programCategory.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        parentId: true,
+        displayOrder: true,
+      },
+      orderBy: [
+        { displayOrder: 'asc' },
+        { name: 'asc' }
+      ],
+    });
 
     return NextResponse.json(categories, {
       status: 200,

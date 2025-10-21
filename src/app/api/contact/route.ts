@@ -1,6 +1,6 @@
 // src/app/api/contact/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 // Validation schema (manual, bisa pakai Zod juga)
 function validateContactForm(data: any) {
@@ -45,18 +45,16 @@ export async function POST(request: NextRequest) {
     const { name, email, phone, subject, message } = body;
 
     // Insert into database
-    const query = `
-      INSERT INTO contacts (name, email, phone, subject, message, status)
-      VALUES (?, ?, ?, ?, ?, 'unread')
-    `;
-
-    await db.query(query, [
-      name.trim(),
-      email.trim().toLowerCase(),
-      phone.trim(),
-      subject.trim(),
-      message.trim(),
-    ]);
+    await prisma.contact.create({
+      data: {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        subject: subject.trim(),
+        message: message.trim(),
+        status: "unread",
+      },
+    });
 
     // TODO: Send email notification (optional)
     // await sendEmailNotification({ name, email, subject, message });
@@ -88,12 +86,21 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     // This should be protected with auth in production
-    const contacts = await db.query<any[]>(
-      `SELECT id, name, email, phone, subject, status, created_at
-       FROM contacts
-       ORDER BY created_at DESC
-       LIMIT 50`
-    );
+    const contacts = await prisma.contact.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        subject: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 50,
+    });
 
     return NextResponse.json(contacts);
   } catch (error: any) {

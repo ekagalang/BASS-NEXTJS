@@ -4,7 +4,7 @@
 -- Description: Sample data untuk development & testing
 -- ============================================
 
-USE bass_training;
+USE bass;
 
 -- ============================================
 -- 1. USERS & AUTHENTICATION

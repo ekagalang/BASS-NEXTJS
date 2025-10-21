@@ -5,7 +5,7 @@
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server";
-import { query } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/middleware/auth.middleware";
 
 export const dynamic = "force-dynamic";
@@ -30,57 +30,62 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const offset = (page - 1) * limit;
 
-    // Build WHERE clause
-    const conditions: string[] = [];
-    const params: unknown[] = [];
+    // Build Prisma where clause
+    const where: any = {};
 
     if (status) {
-      conditions.push(`p.status = ?`);
-      params.push(status);
+      where.status = status;
     }
 
     if (search) {
-      conditions.push(`(p.title LIKE ? OR p.excerpt LIKE ?)`);
-      params.push(`%${search}%`, `%${search}%`);
+      where.OR = [
+        { title: { contains: search } },
+        { excerpt: { contains: search } },
+      ];
     }
 
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-
     // Get total count
-    const countResult = await query<Array<{ total: number }>>(
-      `SELECT COUNT(*) as total FROM posts p ${whereClause}`,
-      params
-    );
-    const total = parseInt(String(countResult[0].total));
+    const total = await prisma.post.count({ where });
 
-    // Get posts
-    const postsQuery = `
-      SELECT
-        p.id,
-        p.title,
-        p.slug,
-        p.excerpt,
-        p.featured_image,
-        p.status,
-        p.published_at,
-        p.created_at,
-        p.updated_at,
-        pc.id as category_id,
-        pc.name as category_name,
-        pc.slug as category_slug
-      FROM posts p
-      LEFT JOIN post_categories pc ON p.category_id = pc.id
-      ${whereClause}
-      ORDER BY p.created_at DESC
-      LIMIT ? OFFSET ?
-    `;
+    // Get posts with category relation
+    const posts = await prisma.post.findMany({
+      where,
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: offset,
+      take: limit,
+    });
 
-    const postsResult = await query(postsQuery, [...params, limit, offset]);
+    // Transform data to match expected response format
+    const transformedPosts = posts.map(post => ({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      featured_image: post.featuredImage,
+      status: post.status,
+      published_at: post.publishedAt,
+      created_at: post.createdAt,
+      updated_at: post.updatedAt,
+      category_id: post.category?.id || null,
+      category_name: post.category?.name || null,
+      category_slug: post.category?.slug || null,
+    }));
 
     return NextResponse.json({
       success: true,
       data: {
-        data: postsResult,
+        data: transformedPosts,
         pagination: {
           page,
           limit,
@@ -135,47 +140,58 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert published_at to MySQL datetime format
-    let mysqlPublishedAt = null;
+    // Convert published_at to Date object
+    let publishedAtDate = null;
     if (published_at) {
-      const date = new Date(published_at);
-      // Format: YYYY-MM-DD HH:MM:SS
-      mysqlPublishedAt = date.toISOString().slice(0, 19).replace('T', ' ');
+      publishedAtDate = new Date(published_at);
     }
 
-    // Insert post (tags removed - column doesn't exist in schema)
-    const result = await query<{ insertId: number }>(
-      `INSERT INTO posts (
-        title, slug, excerpt, content, featured_image,
-        category_id, status, published_at, author_id,
-        created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-      [
+    // Create post with Prisma
+    const post = await prisma.post.create({
+      data: {
         title,
         slug,
-        excerpt || null,
+        excerpt: excerpt || null,
         content,
-        featured_image || null,
-        category_id || null,
-        status || "draft",
-        mysqlPublishedAt,
-        authResult.user.id, // Add author_id (required field)
-      ]
-    );
+        featuredImage: featured_image || null,
+        categoryId: category_id || null,
+        status: status || "draft",
+        publishedAt: publishedAtDate,
+        authorId: authResult.user.id,
+      },
+      include: {
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+    });
 
-    // Get the created post
-    const createdPost = await query(
-      `SELECT p.*, pc.name as category_name, pc.slug as category_slug
-       FROM posts p
-       LEFT JOIN post_categories pc ON p.category_id = pc.id
-       WHERE p.id = ?`,
-      [result.insertId]
-    );
+    // Transform response to match expected format
+    const transformedPost = {
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      content: post.content,
+      featured_image: post.featuredImage,
+      category_id: post.categoryId,
+      status: post.status,
+      published_at: post.publishedAt,
+      author_id: post.authorId,
+      created_at: post.createdAt,
+      updated_at: post.updatedAt,
+      category_name: post.category?.name || null,
+      category_slug: post.category?.slug || null,
+    };
 
     return NextResponse.json({
       success: true,
       message: "Post created successfully",
-      data: createdPost[0],
+      data: transformedPost,
     });
   } catch (error) {
     console.error("Error creating post:", error);
